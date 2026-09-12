@@ -1,0 +1,251 @@
+model_list:
+  # ── Mode: Code — primary implementation model, highest call volume.
+  # DeepSeek V4 Flash (0731): cheapest confirmed rate for a model still
+  # strong at coding/agentic tool-use. Same checkpoint is available on all
+  # 3 providers, so the fallback chain below covers a DeepInfra outage AND
+  # an OpenRouter outage without losing model quality.
+  - model_name: kilo-code
+    litellm_params:
+      model: deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731
+      api_key: os.environ/DEEPINFRA_API_KEY
+  - model_name: kilo-code-fallback-1
+    litellm_params:
+      model: openrouter/deepseek/deepseek-v4.1-flash
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: kilo-code-fallback-2
+    litellm_params:
+      model: fireworks_ai/deepseek-v4-flash-0731
+      api_key: os.environ/FIREWORKS_AI_API_KEY
+
+  # ── Mode: Ask — general Q&A / explaining code. Llama 3.3 70B Turbo on
+  # DeepInfra is already the best price/capability pick; same model is
+  # cross-hosted on OpenRouter and Fireworks for the fallback chain.
+  - model_name: kilo-ask
+    litellm_params:
+      model: deepinfra/meta-llama/Llama-3.3-70B-Instruct-Turbo
+      api_key: os.environ/DEEPINFRA_API_KEY
+  - model_name: kilo-ask-fallback-1
+    litellm_params:
+      model: openrouter/meta-llama/llama-3.3-70b-instruct
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: kilo-ask-fallback-2
+    # Fireworks' serverless catalog has no Llama model at all right now
+    # (verified live against /v1/models) — GLM-5.3 Flash substitutes.
+    litellm_params:
+      model: fireworks_ai/glm-5p3-flash
+      api_key: os.environ/FIREWORKS_AI_API_KEY
+
+  # ── Mode: Debug — needs the stronger reasoning checkpoint over raw Code
+  # mode. DeepSeek V4.1 Flash, again cross-hosted on all 3 providers.
+  - model_name: kilo-debug
+    litellm_params:
+      model: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
+      api_key: os.environ/DEEPINFRA_API_KEY
+  - model_name: kilo-debug-fallback-1
+    litellm_params:
+      model: openrouter/deepseek/deepseek-v4.1-flash
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: kilo-debug-fallback-2
+    litellm_params:
+      model: fireworks_ai/deepseek-v4p1-flash
+      api_key: os.environ/FIREWORKS_AI_API_KEY
+
+  # ── Mode: Plan — GLM-5.3 Flash direct on Fireworks: confirmed $0.15/$0.50
+  # per 1M, good planning/reasoning capability for the price. Falls back to
+  # the same model on OpenRouter, then the full (non-Flash) GLM-5.3 on
+  # DeepInfra as the closest same-family equivalent that provider hosts.
+  - model_name: kilo-plan
+    litellm_params:
+      model: fireworks_ai/glm-5p3-flash
+      api_key: os.environ/FIREWORKS_AI_API_KEY
+  - model_name: kilo-plan-fallback-1
+    litellm_params:
+      model: openrouter/z-ai/glm-5.3-flash
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: kilo-plan-fallback-2
+    litellm_params:
+      model: deepinfra/zai-org/GLM-5.3
+      api_key: os.environ/DEEPINFRA_API_KEY
+
+  # ── Mode: Orchestrator — lowest call volume, but its mistakes cascade to
+  # every sub-agent, so the primary stays on the strongest generalist model
+  # rather than optimizing for cost. GPT-5.6-luna is OpenRouter/OpenAI-only
+  # (not hosted on DeepInfra/Fireworks), so the fallbacks use the strongest
+  # comparable flagship reasoner each of the other two providers hosts.
+  - model_name: kilo-orchestrator
+    litellm_params:
+      model: openrouter/openai/gpt-5.6-luna
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: kilo-orchestrator-fallback-1
+    litellm_params:
+      model: fireworks_ai/kimi-k3
+      api_key: os.environ/FIREWORKS_AI_API_KEY
+  - model_name: kilo-orchestrator-fallback-2
+    litellm_params:
+      model: deepinfra/moonshotai/Kimi-K3
+      api_key: os.environ/DEEPINFRA_API_KEY
+
+  # ── Escape hatch: Claude & Gemini, available to pick manually in Kilo
+  # Code (or any client hitting this proxy) — NOT wired into any of the 5
+  # modes above and NOT part of their fallback chains, per "use OpenRouter/
+  # DeepInfra/Fireworks for coding, Claude/Gemini only if needed". Balanced
+  # tier (Sonnet / Flash), not the flagship-priciest option, since these are
+  # meant to be reached for somewhat often, not just as a last resort.
+  - model_name: claude
+    litellm_params:
+      model: anthropic/claude-sonnet-5
+      api_key: os.environ/ANTHROPIC_API_KEY
+  - model_name: gemini
+    litellm_params:
+      model: gemini/gemini-3.8-flash
+      api_key: os.environ/GEMINI_API_KEY
+
+router_settings:
+  num_retries: 1
+  timeout: 60
+  # Every mode fails over automatically, across all 3 providers in turn, on
+  # errors (rate limit, exhausted credit, auth failure, timeout, connection
+  # refused, etc.) instead of the request just failing back to Kilo Code.
+  fallbacks:
+    - { "kilo-code": ["kilo-code-fallback-1", "kilo-code-fallback-2"] }
+    - { "kilo-ask": ["kilo-ask-fallback-1", "kilo-ask-fallback-2"] }
+    - { "kilo-debug": ["kilo-debug-fallback-1", "kilo-debug-fallback-2"] }
+    - { "kilo-plan": ["kilo-plan-fallback-1", "kilo-plan-fallback-2"] }
+    - { "kilo-orchestrator": ["kilo-orchestrator-fallback-1", "kilo-orchestrator-fallback-2"] }
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/DATABASE_URL
+
+# ── MCP Gateway — Batch 1: general-purpose + databases, no external
+# credentials needed. Every server here is reachable by any client that
+# connects to this proxy's MCP endpoint(s), all pooled under one combined
+# /mcp, or individually at /<name>/mcp.
+mcp_servers:
+  filesystem:
+    transport: stdio
+    command: npx
+    args: ["-y", "@modelcontextprotocol/server-filesystem", "/workspace"]
+  sequential_thinking:
+    transport: stdio
+    command: npx
+    args: ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+  memory:
+    transport: stdio
+    command: npx
+    args: ["-y", "@modelcontextprotocol/server-memory"]
+    env:
+      MEMORY_FILE_PATH: /data/memory.json
+  fetch:
+    transport: stdio
+    command: uvx
+    args: ["mcp-server-fetch"]
+  playwright:
+    transport: stdio
+    command: npx
+    args: ["-y", "@playwright/mcp@latest"]
+  openstreetmap:
+    transport: stdio
+    command: uvx
+    args: ["--with", "mcp<2", "osm-mcp-server"]
+  # Covers Postgres, MySQL/MariaDB, and SQLite through one server. Pointed at
+  # our own litellm_db as a known-working example — duplicate this block
+  # with a different --dsn for any other project's database.
+  # IMPORTANT (found the hard way): LiteLLM's stdio MCP launcher only
+  # reliably works with `command: npx` or `command: uvx` — anything else
+  # (sh, a direct binary path, plain `uv`) fails to register with zero log
+  # output at all. Stick to npx/uvx for every entry here.
+  #
+  # No --dsn arg / no env: block needed below: DSN and DATABASE_URI are set
+  # in .env, and the subprocess inherits the container's real environment
+  # automatically — nothing hardcoded in this file, no os.environ/ needed.
+  dbhub:
+    transport: stdio
+    command: npx
+    args: ["-y", "@bytebase/dbhub@latest", "--transport", "stdio"]
+  # Deeper Postgres-specific tooling (query plans, health checks, index
+  # tuning) alongside DBHub's broader multi-database coverage.
+  postgres_pro:
+    # postgres-mcp on PyPI is still pinned to mcp v1's FastMCP API; uvx
+    # resolves the newest mcp (v2, renamed FastMCP->MCPServer) by default,
+    # which breaks it — pin the compatible SDK version alongside it.
+    transport: stdio
+    command: uvx
+    args: ["--with", "mcp<2", "postgres-mcp", "--access-mode=unrestricted"]
+
+  # ── MCP Gateway — Batch 2 ──────────────────────────────────────────────
+
+  # Generic LSP bridge (get-definition, references, rename, diagnostics) —
+  # covers whatever language server you point it at. Wired to Go's gopls
+  # here since both are compiled into the image already; add pyright /
+  # typescript-language-server / OmniSharp the same way (Dockerfile +
+  # another entry here) for Python / JS / C#.
+  # Both of these route through /opt/npx-shim (see Dockerfile) since
+  # LiteLLM's stdio launcher silently refuses any command that isn't
+  # literally npx/uvx — a Go binary and `uv run <script>` don't qualify.
+  language_server_go:
+    transport: stdio
+    command: npx
+    args: ["-y", "/opt/npx-shim", "/opt/go/bin/mcp-language-server", "-workspace", "/workspace", "-lsp", "gopls"]
+    timeout: 30
+
+  # FFmpeg-powered audio/video editing (trim, convert, overlay, extract).
+  video_audio:
+    transport: stdio
+    command: npx
+    args: ["-y", "/opt/npx-shim", "uv", "run", "--directory", "/opt/video-audio-mcp", "server.py"]
+    timeout: 30
+
+  # Remote command execution / file transfer over SSH. No target configured
+  # yet — fill in SSH_HOST/SSH_USERNAME/SSH_PASSWORD (or SSH_PRIVATE_KEY)
+  # in .env; unhealthy until then, which is expected.
+  ssh:
+    transport: stdio
+    command: npx
+    args: ["-y", "@idletoaster/ssh-mcp-server"]
+    env:
+      SSH_HOST: os.environ/SSH_HOST
+      SSH_PORT: os.environ/SSH_PORT
+      SSH_USERNAME: os.environ/SSH_USERNAME
+      SSH_PASSWORD: os.environ/SSH_PASSWORD
+
+  # AI-enabled 3D generation (text-to-3D / image-to-3D). Needs API keys —
+  # blank in .env until you add one.
+  meshy_3d:
+    transport: stdio
+    command: npx
+    args: ["-y", "@meshy-ai/meshy-mcp-server"]
+    env:
+      MESHY_API_KEY: os.environ/MESHY_API_KEY
+  tripo_3d:
+    transport: stdio
+    command: npx
+    args: ["-y", "tripo-ai-mcp-server"]
+    env:
+      TRIPO_API_SECRET: os.environ/TRIPO_API_SECRET
+
+  # AI-enabled audio: text-to-speech/voice (ElevenLabs) and text-to-music
+  # (Suno, via the AceDataCloud wrapper). Both need API keys.
+  elevenlabs:
+    transport: stdio
+    command: uvx
+    args: ["elevenlabs-mcp"]
+    env:
+      ELEVENLABS_API_KEY: os.environ/ELEVENLABS_API_KEY
+  suno_music:
+    transport: stdio
+    command: uvx
+    args: ["mcp-suno"]
+    env:
+      ACEDATACLOUD_API_TOKEN: os.environ/ACEDATACLOUD_API_TOKEN
+
+  # Blender: this stdio process runs in-container but connects OUTWARD to
+  # Blender's own addon socket — needs Blender open, the addon installed,
+  # and "Start MCP Server" clicked in its sidebar. Unhealthy until then.
+  blender:
+    transport: stdio
+    command: uvx
+    args: ["blender-mcp"]
+    env:
+      BLENDER_HOST: host.docker.internal
+      BLENDER_PORT: "9876"

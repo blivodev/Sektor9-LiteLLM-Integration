@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: litellm_db
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - litellm_postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  litellm:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: litellm-with-mcp-tools:local
+    container_name: litellm_proxy
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./config.yaml:/app/config.yaml
+      # Directory exposed to the filesystem MCP server. Defaults to just
+      # this project, read-only — safe out of the box. To grant access
+      # across all your projects (what any MCP client connected to this
+      # gateway can then read/write with no per-action confirmation), set
+      # MCP_FILESYSTEM_HOST_PATH=D:/Projects and MCP_FILESYSTEM_MODE=rw
+      # in .env — an explicit, conscious opt-in rather than a fixed default.
+      - ${MCP_FILESYSTEM_HOST_PATH:-.}:/workspace:${MCP_FILESYSTEM_MODE:-ro}
+      # Persists the memory MCP server's knowledge graph across restarts.
+      - litellm_mcp_memory:/data
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  litellm_postgres_data:
+  litellm_mcp_memory:

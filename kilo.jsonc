@@ -1,0 +1,57 @@
+{
+  // Routes every Kilo Code mode through the local LiteLLM proxy started by
+  // docker-compose.yaml. LiteLLM itself picks the underlying model per mode
+  // and handles provider fallback (see config.yaml) — this file just tells
+  // Kilo Code "call LiteLLM, and use this model name for this mode".
+  //
+  // NOTE: in practice, this installed version of Kilo Code did NOT pick up
+  // this project-root file automatically — its real active config lives at
+  // the GLOBAL ~/.config/kilo/kilo.jsonc, written by its own Settings UI
+  // (Providers -> Custom provider -> Connect). Keeping this file as a
+  // reference/fallback in case a future version does read it; see the main
+  // README for the manual UI steps that actually worked.
+  "provider": {
+    "openai-compatible": {
+      "options": {
+        // Replace with your own LITELLM_MASTER_KEY from .env — not
+        // committed here on purpose.
+        "apiKey": "<your LITELLM_MASTER_KEY from .env>",
+        "baseURL": "http://localhost:4000/v1"
+      },
+      "models": {
+        "kilo-code": {
+          "name": "Kilo Code (LiteLLM)",
+          "tool_call": true,
+          "limit": { "context": 1048576, "output": 8192 }
+        },
+        "kilo-ask": {
+          "name": "Kilo Ask (LiteLLM)",
+          "tool_call": true,
+          "limit": { "context": 128000, "output": 4096 }
+        },
+        "kilo-debug": {
+          "name": "Kilo Debug (LiteLLM)",
+          "tool_call": true,
+          "limit": { "context": 128000, "output": 8192 }
+        },
+        "kilo-plan": {
+          "name": "Kilo Plan (LiteLLM)",
+          "tool_call": true,
+          "limit": { "context": 128000, "output": 8192 }
+        },
+        "kilo-orchestrator": {
+          "name": "Kilo Orchestrator (LiteLLM)",
+          "tool_call": true,
+          "limit": { "context": 200000, "output": 8192 }
+        }
+      }
+    }
+  },
+  "agent": {
+    "code": { "model": "openai-compatible/kilo-code" },
+    "ask": { "model": "openai-compatible/kilo-ask" },
+    "debug": { "model": "openai-compatible/kilo-debug" },
+    "plan": { "model": "openai-compatible/kilo-plan" },
+    "orchestrator": { "model": "openai-compatible/kilo-orchestrator" }
+  }
+}

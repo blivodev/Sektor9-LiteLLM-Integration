@@ -1,0 +1,190 @@
+# LiteLLM + Postgres → Kilo Code
+
+A local LiteLLM proxy (backed by Postgres) that Kilo Code in VS Code talks to
+instead of calling model providers directly. Each Kilo Code mode maps to its
+own model, and every model has a 2-deep, cross-provider fallback chain so a
+single provider's outage, rate limit, or exhausted credit doesn't stop you
+mid-task — LiteLLM just retries the next provider in line.
+
+## ⚠️ One thing you need to do
+
+Add your **Fireworks AI** key to [`.env`](.env) (`FIREWORKS_AI_API_KEY=`) —
+get one at https://fireworks.ai/account/api-keys. Until it's set, **Plan**
+mode and the Fireworks-hosted fallback legs (used by Code, Debug, Ask, and
+Orchestrator) will fail instead of falling back further. OpenRouter and
+DeepInfra keys are already filled in and tested working.
+
+## Setting this up on another machine
+
+See [`setup/README.md`](setup/README.md) — one script (`setup/setup.ps1` on
+Windows, `setup/setup.sh` on Linux/macOS) reproduces the whole stack: prompts
+for your provider keys, builds and starts the containers, installs the VS
+Code extension, and walks you through the couple of things that genuinely
+can't be automated (Kilo Code's provider wiring, host-side companion MCP
+servers like Blender/Godot/Unity).
+
+## MCP gateway
+
+This LiteLLM instance also acts as a centralized MCP server gateway — see
+`mcp_servers` in [`config.yaml`](config.yaml). 16 servers are registered
+(databases, filesystem, browser automation, 3D/audio AI generation, SSH,
+and more); most are healthy and tested, a few are intentionally inert until
+you add their credentials to `.env`, and a couple (Blender, Godot, Unity,
+Nuclear, Windows desktop control) need their real application running on
+your machine rather than in the container — see `setup/README.md` for those.
+
+After editing `.env`, restart the stack so the container picks it up:
+
+```bash
+docker compose restart litellm
+```
+
+## What's in this repo
+
+| File | Purpose |
+|---|---|
+| [`docker-compose.yaml`](docker-compose.yaml) | Postgres 18 + the LiteLLM proxy container |
+| [`config.yaml`](config.yaml) | LiteLLM's model list, per-mode fallback chains, DB/master-key config |
+| [`.env`](.env) | All secrets (git-ignored) — DB creds, LiteLLM master key, provider API keys |
+| [`kilo.jsonc`](kilo.jsonc) | Points Kilo Code's 5 agent modes at the LiteLLM proxy |
+| [`.vscode/tasks.json`](.vscode/tasks.json) | Auto-starts the stack when you open this folder in VS Code |
+| [`scripts/start-litellm.ps1`](scripts/start-litellm.ps1) | The script that task runs: starts Docker Desktop if needed, `docker compose up -d`, waits for LiteLLM to be live |
+| [`.vscode/extensions.json`](.vscode/extensions.json) | Recommends the Kilo Code extension |
+| [`vscode-extension/litellm-provider-balance/`](vscode-extension/litellm-provider-balance/) | A small local (unpublished) VS Code extension: status bar credit/balance indicator for all 5 providers |
+
+## Escape-hatch models: Claude & Gemini
+
+Two extra entries, `claude` (`anthropic/claude-sonnet-5`) and `gemini`
+(`gemini/gemini-3.8-flash`), are configured but deliberately **not** wired
+into any of the 5 modes or their fallback chains — you use OpenRouter/
+DeepInfra/Fireworks for coding, and can manually pick `claude` or `gemini`
+in Kilo Code whenever you specifically want one of them. Two open items:
+
+- **Anthropic**: the key is genuine and authenticates, but the account has
+  **insufficient credit** ("Your credit balance is too low"). A Claude
+  subscription doesn't include API credit — add some at
+  [console.anthropic.com/settings/billing](https://console.anthropic.com/settings/billing)
+  before `claude` will actually respond.
+- **Gemini**: works right now, but LiteLLM routed it through **Vertex AI**
+  based on the key's shape (`AQ.…`, which looks like a Google OAuth access
+  token, not a stable AI Studio key like `AIzaSy…`). OAuth access tokens
+  typically expire in about an hour — if `gemini` suddenly starts failing,
+  that's almost certainly why; you'd want a proper AI Studio API key instead.
+
+## Model routing
+
+Picked for price/capability using each provider's current listed rates
+(OpenRouter, DeepInfra, Fireworks AI only, per your preference — Anthropic/Gemini
+were checked but not used). Every mode's fallback chain deliberately spans a
+*different* provider per hop, so no single provider is a single point of
+failure for any mode.
+
+| Mode | Primary | Fallback 1 | Fallback 2 |
+|---|---|---|---|
+| **Code** | DeepInfra `DeepSeek-V4-Flash-0731` ($0.06/$0.18 per 1M) | OpenRouter `deepseek-v4.1-flash` | Fireworks `deepseek-v4-flash-0731` |
+| **Ask** | DeepInfra `Llama-3.3-70B-Turbo` ($0.10/$0.32) | OpenRouter `llama-3.3-70b-instruct` | Fireworks `llama-v3p3-70b-instruct` |
+| **Debug** | DeepInfra `DeepSeek-V4.1-Flash` ($0.20/$0.60) | OpenRouter `deepseek-v4.1-flash` | Fireworks `deepseek-v4p1-flash` |
+| **Plan** | Fireworks `GLM-5.3-Flash` ($0.15/$0.50) | OpenRouter `glm-5.3-flash` | DeepInfra `GLM-5.3` (full, closest DeepInfra has to the Flash variant) |
+| **Ask fallback-2** | *(see Ask row for primary/fallback-1)* | — | Fireworks `GLM-5.3-Flash`, not Llama — Fireworks' serverless catalog has no Llama model at all right now (verified live) |
+| **Orchestrator** | OpenRouter `gpt-5.6-luna` (OpenAI, no cheaper equivalent — kept as-is since it's low-volume and mistakes here cascade to every sub-agent) | Fireworks `kimi-k3` | DeepInfra `Kimi-K3` |
+
+Why these specifically:
+- **Code** is your highest-volume mode, so it got the cheapest model that's
+  still a real coding model (DeepSeek Flash), not the cheapest model overall.
+- **Ask** and **Debug** were left mostly as you had them — I checked and
+  they were already good price/capability picks; Debug in particular keeps
+  the pricier V4.1 checkpoint over the base Flash since debugging benefits
+  more from reasoning quality.
+- **Plan** moved from OpenRouter to Fireworks direct once I had confirmed
+  Fireworks pricing for the same model ($0.15/$0.50) — same model, one less
+  hop.
+- **Orchestrator** stayed on the strongest model rather than the cheapest,
+  since it runs rarely (once per task, to delegate) but a bad decision there
+  affects everything downstream.
+
+Confidence note: pricing and model slugs for OpenRouter/DeepInfra were
+verified live against `http://localhost:4000` during setup (10 of the 15
+configured models were test-called successfully). The 5 Fireworks-backed
+entries are configured correctly per Fireworks' docs but untested — verify
+once you've added your key (see below).
+
+## Verifying it works
+
+```bash
+curl http://localhost:4000/health/liveliness
+```
+
+Call any mode directly (swap `kilo-code` for `kilo-ask` / `kilo-debug` /
+`kilo-plan` / `kilo-orchestrator`, or any of the `*-fallback-1` / `*-fallback-2`
+names from `config.yaml` to test a specific fallback leg):
+
+```bash
+curl http://localhost:4000/v1/chat/completions \
+  -H "Authorization: Bearer $(grep LITELLM_MASTER_KEY .env | cut -d= -f2)" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"kilo-code","messages":[{"role":"user","content":"say hi"}]}'
+```
+
+## Kilo Code setup
+
+`kilo.jsonc` in the project root is kept as a reference, but in practice
+**this didn't get picked up automatically** by the installed Kilo Code
+version — configure it once through the UI instead (this is what actually
+worked):
+
+1. Gear icon → **Providers** → **Custom provider** → **+ Connect**
+   - Base URL: `http://localhost:4000/v1`
+   - API key: your `LITELLM_MASTER_KEY` from `.env`
+   - It should auto-discover all the `kilo-*` models — select at least the
+     5 primaries.
+2. Gear icon → **Models** → **"Model per Mode"** → set Code/Ask/Debug/Plan/
+   Orchestrator to their matching `kilo-*` model.
+
+This writes to Kilo's **global** config (`~/.config/kilo/kilo.jsonc` on
+Windows: `%USERPROFILE%\.config\kilo\kilo.jsonc`), not this project's file.
+
+## Auto-start on VS Code open
+
+`.vscode/tasks.json` defines a `runOn: folderOpen` task that runs
+`scripts/start-litellm.ps1`, which:
+1. Checks `docker info`; if the engine isn't responding, launches Docker
+   Desktop and waits (up to ~2 min) for it to come up.
+2. Runs `docker compose up -d` (no-op if containers are already running).
+3. Polls `/health/liveliness` until LiteLLM responds.
+
+**First time you open this folder**, VS Code will prompt *"This workspace
+wants to run a task automatically"* — allow it, or the stack won't
+auto-start (this is a VS Code security prompt, not something we can or
+should bypass). It only asks once per workspace.
+
+## Provider balance status bar
+
+[`vscode-extension/litellm-provider-balance/`](vscode-extension/litellm-provider-balance/)
+is installed into your VS Code (copied to
+`%USERPROFILE%\.vscode\extensions\local.litellm-provider-balance-0.0.1\`) —
+run **Developer: Reload Window** once to activate it if you haven't already.
+It shows a status bar segment per provider, colored 🟢/🟡/🔴 by how much of
+its budget is left. OpenRouter and DeepInfra are fully automatic (real
+balance APIs on both sides); the rest need one-time manual setup via the
+status bar item's click menu:
+
+- **Fireworks**: click → "Configure Fireworks tracking" → account ID
+  **`YOUR_USERNAME`** (already confirmed against their API), then enter whatever
+  $ you've currently topped up (check your Fireworks billing dashboard —
+  the account was just created today, so this is likely close to $0 or a
+  small free-trial amount). Spend going forward is tracked automatically.
+- **Anthropic / Gemini**: fully manual — no usage API for a normal key.
+  Click → "Update \[Anthropic/Gemini\] budget & spent-so-far" and type in
+  whatever you see on their console periodically. See the extension's own
+  [README](vscode-extension/litellm-provider-balance/README.md) for details.
+
+## Notes on secrets
+
+Everything sensitive (DB password, LiteLLM master key, provider API keys)
+lives in `.env`, which is git-ignored. `config.yaml` and `docker-compose.yaml`
+reference it via `os.environ/VAR_NAME` / `env_file`, so nothing is duplicated
+in plaintext across files anymore. `kilo.jsonc` still has the master key
+literal, since Kilo Code runs on the host (not in a container) and can't read
+`.env` — if you later put this folder under version control, either add
+`kilo.jsonc` to `.gitignore` too or switch its `apiKey` to Kilo's `{env:VAR}`
+syntax backed by a machine-level environment variable.

@@ -1,0 +1,16 @@
+{
+  "name": "litellm-provider-balance",
+  "displayName": "LiteLLM Provider Balance",
+  "description": "Status bar balance/credit indicator for the OpenRouter, DeepInfra, and Fireworks AI accounts behind your LiteLLM proxy.",
+  "version": "0.0.1",
+  "publisher": "local",
+  "engines": { "vscode": "^1.85.0" },
+  "main": "./extension.js",
+  "activationEvents": ["onStartupFinished"],
+  "contributes": {
+    "commands": [
+      { "command": "litellmBalance.refresh", "title": "LiteLLM Providers: Refresh Balances" },
+      { "command": "litellmBalance.showMenu", "title": "LiteLLM Providers: Show Balance Menu" }
+    ]
+  }
+}

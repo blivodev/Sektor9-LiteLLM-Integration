@@ -163,6 +163,8 @@ mcp_servers:
     transport: stdio
     command: npx
     args: ["-y", "@bytebase/dbhub@latest", "--transport", "stdio"]
+    env:
+      DSN: os.environ/MCP_POSTGRES_DSN
   # Deeper Postgres-specific tooling (query plans, health checks, index
   # tuning) alongside DBHub's broader multi-database coverage.
   postgres_pro:
@@ -172,6 +174,8 @@ mcp_servers:
     transport: stdio
     command: uvx
     args: ["--with", "mcp<2", "postgres-mcp", "--access-mode=unrestricted"]
+    env:
+      DATABASE_URI: os.environ/MCP_POSTGRES_DSN
 
   # ── MCP Gateway — Batch 2 ──────────────────────────────────────────────
 

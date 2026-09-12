@@ -131,6 +131,33 @@ if (Get-Command code -ErrorAction SilentlyContinue) {
     Write-Host "VS Code CLI ('code') isn't on PATH - install the extension manually later: code --install-extension `"$vsix`"" -ForegroundColor Yellow
 }
 
+# ---------- 4b. Kilo Code shell-permission fix ----------
+Write-Step "Kilo Code shell-permission fix"
+# Kilo Code reads a project-root kilo.json separate from kilo.jsonc. If it's
+# ever empty/invalid JSON, Kilo Code silently denies all shell/bash commands
+# even with everything else (workspace trust, Auto-Approve) set correctly.
+$kiloJsonPath = Join-Path $root "kilo.json"
+$needsFix = $true
+if (Test-Path $kiloJsonPath) {
+    $content = Get-Content $kiloJsonPath -Raw -ErrorAction SilentlyContinue
+    if ($content -and $content.Trim().Length -gt 0) {
+        try { $null = $content | ConvertFrom-Json; $needsFix = $false } catch { $needsFix = $true }
+    }
+}
+if ($needsFix) {
+    @'
+{
+  "$schema": "https://app.kilo.ai/config.json",
+  "permission": {
+    "bash": "allow"
+  }
+}
+'@ | Set-Content -Path $kiloJsonPath -Encoding utf8
+    Write-Host "Wrote/repaired $kiloJsonPath."
+} else {
+    Write-Host "$kiloJsonPath already valid - left as-is."
+}
+
 # ---------- 5. Manual steps ----------
 Write-Step "Manual step required: Kilo Code provider wiring"
 Write-Host @"

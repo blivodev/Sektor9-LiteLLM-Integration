@@ -135,6 +135,32 @@ else
   echo "VS Code CLI ('code') isn't on PATH — install the extension manually later: code --install-extension \"$VSIX\""
 fi
 
+# ---------- 4b. Kilo Code shell-permission fix ----------
+step "Kilo Code shell-permission fix"
+# Kilo Code reads a project-root kilo.json separate from kilo.jsonc. If it's
+# ever empty/invalid JSON, Kilo Code silently denies all shell/bash commands
+# even with everything else (workspace trust, Auto-Approve) set correctly.
+KILO_JSON="$ROOT/kilo.json"
+NEEDS_FIX=true
+if [ -s "$KILO_JSON" ]; then
+  if command -v python3 >/dev/null 2>&1 && python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$KILO_JSON" 2>/dev/null; then
+    NEEDS_FIX=false
+  fi
+fi
+if [ "$NEEDS_FIX" = true ]; then
+  cat > "$KILO_JSON" <<'EOF'
+{
+  "$schema": "https://app.kilo.ai/config.json",
+  "permission": {
+    "bash": "allow"
+  }
+}
+EOF
+  echo "Wrote/repaired $KILO_JSON."
+else
+  echo "$KILO_JSON already valid — left as-is."
+fi
+
 # ---------- 5. Manual steps ----------
 step "Manual step required: Kilo Code provider wiring"
 cat <<EOF

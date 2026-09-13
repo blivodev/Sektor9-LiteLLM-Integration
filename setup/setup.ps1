@@ -177,6 +177,17 @@ if ($pythonExe) {
     Write-Host "Python not found on PATH - skipping. Install Python 3, then optionally run scripts\schedule_refresh.ps1 later." -ForegroundColor Yellow
 }
 
+# ---------- 4d. Local Ollama (optional) ----------
+Write-Step "Local LLM via Ollama (optional)"
+Write-Host "Running a model on your own GPU/CPU costs `$0 per token, but only helps if your"
+Write-Host "hardware can run one at a useful speed. This checks your hardware, recommends a"
+Write-Host "model size (or honestly tells you it's not worth it), and asks before doing anything."
+if ($pythonExe) {
+    & $pythonExe (Join-Path $root "scripts\setup_ollama.py")
+} else {
+    Write-Host "Python not found on PATH - skipping. Run scripts\setup_ollama.py later once it's installed." -ForegroundColor Yellow
+}
+
 # ---------- 5. Manual steps ----------
 Write-Step "Manual step required: Kilo Code provider wiring"
 Write-Host @"

@@ -179,6 +179,17 @@ else
   echo "Python not found on PATH — skipping. Install Python 3, then optionally run scripts/schedule_refresh.sh later."
 fi
 
+# ---------- 4d. Local Ollama (optional) ----------
+step "Local LLM via Ollama (optional)"
+echo "Running a model on your own GPU/CPU costs \$0 per token, but only helps if your"
+echo "hardware can run one at a useful speed. This checks your hardware, recommends a"
+echo "model size (or honestly tells you it's not worth it), and asks before doing anything."
+if [ -n "$PYTHON" ]; then
+  "$PYTHON" "$ROOT/scripts/setup_ollama.py"
+else
+  echo "Python not found on PATH — skipping. Run scripts/setup_ollama.py later once it's installed."
+fi
+
 # ---------- 5. Manual steps ----------
 step "Manual step required: Kilo Code provider wiring"
 cat <<EOF

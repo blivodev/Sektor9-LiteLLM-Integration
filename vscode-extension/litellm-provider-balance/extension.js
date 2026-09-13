@@ -139,7 +139,10 @@ async function fetchOpenRouter(key) {
   const res = await fetch("https://openrouter.ai/api/v1/credits", {
     headers: { Authorization: `Bearer ${key}` },
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`HTTP ${res.status}${body ? ` — ${body.slice(0, 200)}` : ""}`);
+  }
   const json = await res.json();
   const total = json?.data?.total_credits ?? 0;
   const usage = json?.data?.total_usage ?? 0;
@@ -152,15 +155,35 @@ async function fetchDeepInfra(key) {
   const res = await fetch("https://api.deepinfra.com/v1/me?checklist=true", {
     headers: { Authorization: `Bearer ${key}` },
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`HTTP ${res.status}${body ? ` — ${body.slice(0, 200)}` : ""}`);
+  }
   const json = await res.json();
-  const stripeBalance = json?.stripe_balance ?? json?.checklist?.stripe_balance;
-  const limit = json?.limit ?? json?.checklist?.limit ?? null;
-  if (typeof stripeBalance !== "number") throw new Error("no stripe_balance in response");
-  // negative stripe_balance = ready-to-spend credit; positive = owed.
-  const remaining = -stripeBalance;
+  const checklist = json?.checklist ?? {};
+  const stripeBalance = json?.stripe_balance ?? checklist.stripe_balance;
+  const limit = json?.limit ?? checklist.limit ?? null;
+  const recent = json?.recent ?? checklist.recent ?? null;
+  if (typeof stripeBalance !== "number" && typeof recent !== "number") {
+    throw new Error(
+      `unrecognized response shape (no stripe_balance/recent) — raw keys: ${Object.keys(json || {}).join(", ")}`
+    );
+  }
+
+  // `limit`/`stripe_balance` are a STATIC auto-recharge ceiling setting on
+  // the account, not a live balance — they don't move as you spend, which
+  // is exactly the "never updates" bug this fixes. `recent` (usage in the
+  // current billing period) is the field that actually tracks real spend,
+  // so prefer limit - recent when both are present; fall back to the old
+  // -stripe_balance-only calc only if `recent` isn't in the response.
+  let remaining;
+  if (typeof limit === "number" && typeof recent === "number") {
+    remaining = limit - recent;
+  } else {
+    remaining = -stripeBalance;
+  }
   const total = typeof limit === "number" ? limit : null;
-  return { remaining, total, stripeBalance };
+  return { remaining, total, stripeBalance, recent };
 }
 
 // ---------- Fireworks AI (semi-automatic) ----------
@@ -270,6 +293,37 @@ function computeManual(context, prefix) {
   return { configured: true, remaining: total - spent, total, spent, updatedAt };
 }
 
+// ---------- low-balance notifications ----------
+
+const WARN_COOLDOWN_MS = 6 * 60 * 60 * 1000; // don't re-nag more than once every 6h per provider
+
+async function checkLowBalanceAndNotify(context, labeledEntries) {
+  for (const [label, entry] of labeledEntries) {
+    if (!entry || entry.error || entry.configured === false) continue;
+    const warnKey = `litellmBalance.warned.${label}`;
+    const color = colorFor(entry.remaining, entry.total);
+    if (color !== "red") {
+      // Back above the threshold (e.g. after a top-up) - clear so a future
+      // dip warns again instead of staying silent forever.
+      if (context.globalState.get(warnKey)) await context.globalState.update(warnKey, undefined);
+      continue;
+    }
+    const lastWarned = context.globalState.get(warnKey);
+    if (lastWarned && Date.now() - lastWarned < WARN_COOLDOWN_MS) continue;
+
+    await context.globalState.update(warnKey, Date.now());
+    const msg =
+      entry.remaining <= 0
+        ? `${label} is out of credit (${money(entry.remaining)}).`
+        : entry.total != null
+          ? `${label} balance is low: ${money(entry.remaining)} left of ${money(entry.total)}.`
+          : `${label} balance is low: ${money(entry.remaining)} left.`;
+    vscode.window.showWarningMessage(msg, "Open menu").then((picked) => {
+      if (picked === "Open menu") showMenu(context);
+    });
+  }
+}
+
 // ---------- refresh + render ----------
 
 async function refresh(context, { silent } = {}) {
@@ -306,6 +360,14 @@ async function refresh(context, { silent } = {}) {
 
   last = next;
   render({ orKeySet: !!orKey, diKeySet: !!diKey });
+
+  await checkLowBalanceAndNotify(context, [
+    ["OpenRouter", next.openrouter],
+    ["DeepInfra", next.deepinfra],
+    ["Fireworks AI", next.fireworks],
+    ["Anthropic", next.anthropic],
+    ["Gemini", next.gemini],
+  ]);
 
   if (!silent) {
     vscode.window.setStatusBarMessage("LiteLLM Providers: balances refreshed", 3000);

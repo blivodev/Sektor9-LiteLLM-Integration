@@ -124,7 +124,7 @@ fi
 
 # ---------- 4. VS Code extension ----------
 step "Installing the provider-balance VS Code extension"
-VSIX="$ROOT/vscode-extension/litellm-provider-balance/litellm-provider-balance-0.0.1.vsix"
+VSIX="$ROOT/vscode-extension/litellm-provider-balance/litellm-provider-balance-0.0.2.vsix"
 if command -v code >/dev/null 2>&1; then
   if [ -f "$VSIX" ]; then
     code --install-extension "$VSIX"

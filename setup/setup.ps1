@@ -120,7 +120,7 @@ if ($healthy) { Write-Host "LiteLLM is up at http://localhost:4000" } else { Wri
 
 # ---------- 4. VS Code extension ----------
 Write-Step "Installing the provider-balance VS Code extension"
-$vsix = Join-Path $root "vscode-extension\litellm-provider-balance\litellm-provider-balance-0.0.1.vsix"
+$vsix = Join-Path $root "vscode-extension\litellm-provider-balance\litellm-provider-balance-0.0.2.vsix"
 if (Get-Command code -ErrorAction SilentlyContinue) {
     if (Test-Path $vsix) {
         code --install-extension $vsix

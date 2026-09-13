@@ -1,0 +1,9 @@
+# Copy to ~/.aider.conf.yml (or ./.aider.conf.yml in a specific project),
+# fill in your master key, and aider talks to every model in config.yaml.
+#
+# Aider is built on LiteLLM's own Python SDK internally, so pointing it at
+# OUR LiteLLM proxy is just "another LiteLLM-compatible endpoint" to it.
+
+openai-api-base: http://localhost:4000
+openai-api-key: YOUR_LITELLM_MASTER_KEY
+model: openai/kilo-code

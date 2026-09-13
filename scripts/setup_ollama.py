@@ -78,6 +78,31 @@ def detect_nvidia_vram_gb() -> float | None:
         return None
 
 
+def detect_amd_gpu() -> tuple[str, float] | None:
+    """Best-effort AMD/other non-NVIDIA dedicated GPU detection (Windows
+    only for now). VRAM here comes from WMI's AdapterRAM, which is known
+    to misreport (often capped around 4GB) on modern cards with >4GB -
+    treat the number as a rough floor, not exact, and say so to the user."""
+    if platform.system() != "Windows":
+        return None
+    try:
+        r = run([
+            "powershell", "-NoProfile", "-Command",
+            "Get-CimInstance Win32_VideoController | "
+            "Where-Object { $_.Name -notmatch 'Basic|Remote|Virtual' } | "
+            "Sort-Object AdapterRAM -Descending | "  # dedicated GPU over integrated, not just whichever enumerates first
+            "Select-Object -First 1 Name,AdapterRAM | ConvertTo-Json",
+        ])
+        data = __import__("json").loads(r.stdout.strip())
+        name = data.get("Name", "")
+        if not name or "nvidia" in name.lower():
+            return None
+        ram_bytes = data.get("AdapterRAM") or 0
+        return name, (ram_bytes / (1024 ** 3) if ram_bytes else 0.0)
+    except Exception:
+        return None
+
+
 def detect_ram_gb() -> float | None:
     system = platform.system()
     try:
@@ -109,14 +134,24 @@ def detect_ram_gb() -> float | None:
 def recommend() -> dict:
     vram = detect_nvidia_vram_gb()
     ram = detect_ram_gb()
+    amd = detect_amd_gpu()  # (name, rough_vram_gb) or None
 
     for min_vram, min_ram, model, desc in TIERS:
         if vram is not None and vram >= min_vram and min_vram > 0:
-            return {"worth_it": True, "model": model, "why": desc, "vram_gb": vram, "ram_gb": ram}
+            return {"worth_it": True, "model": model, "why": desc, "vram_gb": vram, "ram_gb": ram, "amd": amd}
     if ram is not None and ram >= MIN_RAM_GB_WORTH_IT:
         # last tier (CPU-only) is the RAM-based fallback
         min_vram, min_ram, model, desc = TIERS[-1]
-        return {"worth_it": True, "model": model, "why": desc, "vram_gb": vram, "ram_gb": ram}
+        why = desc
+        if amd:
+            why += (
+                f". Note: detected an AMD GPU ({amd[0]}) that this script can't size "
+                "accurately (WMI under-reports AMD VRAM) -- Ollama's AMD support "
+                "(ROCm on Linux, Vulkan on Windows in recent versions) may let you "
+                "run a larger/faster model than this CPU-only pick; worth checking "
+                "https://ollama.com/blog manually if you want to push past this."
+            )
+        return {"worth_it": True, "model": model, "why": why, "vram_gb": vram, "ram_gb": ram, "amd": amd}
 
     return {
         "worth_it": False,
@@ -124,6 +159,7 @@ def recommend() -> dict:
         "why": "Not enough detected VRAM/RAM to run a useful local model at a usable speed.",
         "vram_gb": vram,
         "ram_gb": ram,
+        "amd": amd,
     }
 
 

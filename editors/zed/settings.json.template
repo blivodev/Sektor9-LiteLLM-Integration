@@ -1,0 +1,29 @@
+{
+  "language_models": {
+    "openai_compatible": {
+      "litellm": {
+        "api_url": "http://localhost:4000/v1",
+        "available_models": [
+          { "name": "kilo-code", "display_name": "Kilo Code (LiteLLM)", "max_tokens": 128000, "capabilities": { "tools": true, "images": false } },
+          { "name": "kilo-ask", "display_name": "Kilo Ask (LiteLLM)", "max_tokens": 128000, "capabilities": { "tools": true, "images": false } },
+          { "name": "kilo-debug", "display_name": "Kilo Debug (LiteLLM)", "max_tokens": 128000, "capabilities": { "tools": true, "images": false } },
+          { "name": "kilo-plan", "display_name": "Kilo Plan (LiteLLM)", "max_tokens": 128000, "capabilities": { "tools": true, "images": false } },
+          { "name": "kilo-orchestrator", "display_name": "Kilo Orchestrator (LiteLLM)", "max_tokens": 200000, "capabilities": { "tools": true, "images": false } },
+          { "name": "claude", "display_name": "Claude (LiteLLM)", "max_tokens": 200000, "capabilities": { "tools": true, "images": false } },
+          { "name": "gemini", "display_name": "Gemini (LiteLLM)", "max_tokens": 128000, "capabilities": { "tools": true, "images": false } }
+        ]
+      }
+    }
+  },
+  "context_servers": {
+    "litellm-gateway": {
+      "source": "custom",
+      "command": "npx",
+      "args": [
+        "-y", "mcp-remote", "http://localhost:4000/mcp",
+        "--allow-http", "--header", "Authorization:${LITELLM_AUTH_HEADER}"
+      ],
+      "env": { "LITELLM_AUTH_HEADER": "Bearer YOUR_LITELLM_MASTER_KEY" }
+    }
+  }
+}

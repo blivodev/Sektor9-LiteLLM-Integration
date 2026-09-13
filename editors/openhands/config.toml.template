@@ -1,0 +1,19 @@
+# Copy to config.toml in your OpenHands working directory, fill in your
+# master key. NOTE: unlike Cline/Zed/Aider above, this template is based
+# on researched documentation, not personally live-tested against a
+# running OpenHands instance in this session (it's the heaviest of the 5
+# to install — normally its own Docker setup). Verify it works before
+# relying on it, and let a future update fix anything that's off.
+
+[llm]
+model = "openai/kilo-code"
+base_url = "http://localhost:4000/v1"
+api_key = "YOUR_LITELLM_MASTER_KEY"
+
+[mcp]
+# SHTTP (Streamable HTTP) pointed straight at the gateway — OpenHands
+# supports this as a native remote transport (no mcp-remote bridge needed,
+# unlike Cline/Zed above), per its own docs.
+[[mcp.shttp_servers]]
+url = "http://localhost:4000/mcp"
+api_key = "YOUR_LITELLM_MASTER_KEY"

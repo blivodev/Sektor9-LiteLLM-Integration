@@ -80,10 +80,69 @@ def load_env() -> dict:
 ENV = load_env()
 
 
+# ───────────────────────── LiteLLM's own price/context map ────────────────
+# LiteLLM maintains a community-updated JSON covering every provider it
+# supports -- including DeepInfra and Fireworks, whose OWN APIs don't expose
+# per-model pricing at all. This is the primary source of truth for price/
+# context/tool-support below; live provider catalogs are only used to know
+# what currently EXISTS (this file can lag a few days on a brand-new release,
+# which is fine -- it just means a very-latest model gets picked up on the
+# following week's run instead of the day it ships).
+
+LITELLM_PRICE_MAP_URL = "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json"
+
+
+def fetch_litellm_price_map() -> dict:
+    try:
+        r = requests.get(LITELLM_PRICE_MAP_URL, timeout=TIMEOUT)
+        r.raise_for_status()
+        return r.json()
+    except requests.RequestException as e:
+        print(f"[warn] couldn't fetch LiteLLM price map: {e}", file=sys.stderr)
+        return {}
+
+
+def _price_map_lookup(price_map: dict, provider: str, model_id: str) -> dict | None:
+    """Try the couple of key spellings providers' own APIs vs. LiteLLM's map
+    tend to differ on (mainly Fireworks' short vs. full accounts/... form)."""
+    candidates = [f"{provider}/{model_id}"]
+    if provider == "fireworks_ai":
+        if not model_id.startswith("accounts/"):
+            candidates.append(f"fireworks_ai/accounts/fireworks/models/{model_id}")
+        else:
+            candidates.append(f"fireworks_ai/{model_id.rsplit('/', 1)[-1]}")
+    for key in candidates:
+        if key in price_map:
+            return price_map[key]
+    return None
+
+
+def enrich_with_price_map(entries: list[dict], provider: str, price_map: dict) -> list[dict]:
+    """Fills in price_in/price_out/context/supports_tools from LiteLLM's map
+    wherever the live provider API left them unknown (or to correct/confirm
+    them where the provider API did report something)."""
+    for e in entries:
+        info = _price_map_lookup(price_map, provider, e["id"])
+        if not info:
+            continue
+        if info.get("input_cost_per_token") is not None:
+            e["price_in"] = info["input_cost_per_token"] * 1_000_000
+        if info.get("output_cost_per_token") is not None:
+            e["price_out"] = info["output_cost_per_token"] * 1_000_000
+        ctx = info.get("max_input_tokens") or info.get("max_tokens")
+        if ctx and not e.get("context"):
+            e["context"] = ctx
+        if info.get("supports_function_calling") is not None and e.get("supports_tools") is None:
+            e["supports_tools"] = info["supports_function_calling"]
+    return entries
+
+
 # ───────────────────────── provider catalog fetchers ──────────────────────
 # Each returns: [{"id": str, "price_in": float|None, "price_out": float|None,
 #                 "context": int|None, "supports_tools": bool|None}, ...]
-# price_* is USD per 1M tokens. None means "unknown - compare price manually".
+# price_* is USD per 1M tokens. None means "unknown - compare price manually"
+# (rare after enrich_with_price_map() runs, but still possible for a model
+# too new to be in LiteLLM's map yet).
 
 def _per_million(v) -> float | None:
     if v is None:
@@ -431,13 +490,21 @@ def main():
     args = ap.parse_args()
 
     cfg = load_config()
+
+    print("Fetching LiteLLM's price/context map (primary pricing source)...")
+    price_map = fetch_litellm_price_map()
+    print(f"  {len(price_map)} models known to it.")
+
     catalogs: dict[str, list[dict]] = {}
     for provider in FETCHERS:
         try:
-            catalogs[provider] = FETCHERS[provider]()
+            catalog = FETCHERS[provider]()
         except requests.RequestException as e:
             print(f"[warn] couldn't fetch {provider} catalog: {e}", file=sys.stderr)
-            catalogs[provider] = []
+            catalog = []
+        if catalog and price_map:
+            catalog = enrich_with_price_map(catalog, provider, price_map)
+        catalogs[provider] = catalog
 
     log_lines = []
     applied = False

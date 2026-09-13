@@ -47,9 +47,18 @@ new checkpoint. It's built to never silently break anything:
   comparison in the message.
 - A summary is appended to `MODEL_REFRESH_LOG.md` on every run, whether or
   not anything changed.
+- Picks the **cheapest** model that's at least as new a version and at
+  least as large a context window as what's running — not the newest one
+  that happens to be no pricier. Recency only breaks ties on equal price.
 
-It's heuristic (price + context length + version number — providers don't
-expose a "quality" score), which is exactly why the safety net above exists.
+Real pricing/context comes primarily from
+[LiteLLM's own community-maintained price map](https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json)
+(covers every provider, including DeepInfra and Fireworks, whose own APIs
+don't expose per-model pricing at all) — live provider catalogs are only
+used to know what currently exists, since that map can lag a few days
+behind a brand-new release. It's still heuristic (price + context length +
+version number — no provider exposes a real "quality" score), which is
+exactly why the safety net above exists.
 
 ```bash
 python scripts/refresh_models.py --dry-run   # see candidates, change nothing

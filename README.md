@@ -16,18 +16,22 @@ are filled in and tested working. Still open: real credentials for the
 section below), and the host-companion apps (Unity/Godot/Nuclear/Windows
 desktop control) documented in `setup/README.md`.
 
-## What's new: dashboard, 5 editors, local models, preferences
+## What's new: dashboard, 6 editors, local models, preferences
 
 - **[`dashboard/app.py`](dashboard/app.py)** — one page for everything:
-  container/MCP health, provider balances, a unified log viewer, and an
+  container/MCP health, provider balances, a unified log viewer, an
   API-keys page that writes `.env` and re-propagates to every configured
-  editor automatically. `python dashboard/app.py` → http://127.0.0.1:8877.
-  Live-tested end to end, including two real bugs found and fixed
-  (Windows console encoding crashing the log viewer; see `docs/STATUS.md`).
-- **[`editors/`](editors/)** — 5 editors/agents beyond Kilo Code+VS Code,
-  all pointed at this same proxy+gateway: Cline, Zed, Aider, OpenHands.
-  3 other strong-looking candidates (Void, Continue.dev, Roo Code) were
-  checked and rejected as no longer maintained — see `editors/README.md`.
+  editor automatically, plus **Preference** (change the model-selection
+  mode and apply it live), **Custom Routing** (hand-pick each mode's
+  model), and **Models** (a searchable, live, price-annotated catalog).
+  `python dashboard/app.py` → http://127.0.0.1:8877. Live-tested end to
+  end, including bugs found and fixed along the way — see `docs/STATUS.md`.
+- **[`editors/`](editors/)** — 6 editors/agents beyond Kilo Code+VS Code,
+  all pointed at this same proxy+gateway: Cline, Zed, Aider, OpenHands,
+  Tabby. 3 other strong-looking candidates (Void, Continue.dev, Roo Code)
+  were checked and rejected as no longer maintained — see
+  `editors/README.md`. GitHub Copilot Chat is also there as a
+  subscription-gated bonus 7th, for anyone who already pays for Copilot.
 - **[`scripts/setup_ollama.py`](scripts/setup_ollama.py)** — optional,
   hardware-aware local model via Ollama, registered as a zero-cost
   last-resort fallback for Code/Ask modes only if it's actually worth it

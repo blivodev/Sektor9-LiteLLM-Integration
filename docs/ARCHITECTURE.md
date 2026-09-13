@@ -117,13 +117,13 @@ flowchart LR
     E --> F[git commit + optional<br/>container restart]
 ```
 
-## The 5 editors/agents (+1 subscription-gated bonus)
+## The 6 editors/agents (+1 subscription-gated bonus)
 
-`editors/` holds a per-tool folder (Cline, Zed, Aider, OpenHands, plus a
-pointer for Kilo Code) each pointed at the same LiteLLM proxy + MCP
-gateway, plus a 6th (`copilot/`) kept out of the main comparison since it
-needs an active GitHub Copilot subscription just to function. Two
-connection patterns recur:
+`editors/` holds a per-tool folder (Cline, Zed, Aider, OpenHands, Tabby,
+plus a pointer for Kilo Code) each pointed at the same LiteLLM proxy +
+MCP gateway, plus a 7th (`copilot/`) kept out of the main comparison
+since it needs an active GitHub Copilot subscription just to function.
+Two connection patterns recur:
 
 ```mermaid
 flowchart LR
@@ -151,6 +151,21 @@ despite being the same VS-Code-extension shape as Cline. See
 out of that workspace file (a VS Code `inputs` prompt instead) when every
 other editor's installer here just writes it straight into a user-profile
 settings file.
+
+**Tabby** is structurally different from all of the above: it isn't an
+editor or an editor extension, it's its own self-hosted server (its own
+Docker container, `editors/tabby/docker-compose.yml`) that a thin IDE
+extension then connects to -- `IDE extension -> Tabby -> LiteLLM ->
+providers`, one hop more than everything else here. It has no MCP client
+of its own, so it isn't part of either pattern above. Its chat model and
+completion model are each configured independently
+(`[model.chat.http]` / `[model.completion.http]` in `config.toml`,
+`kind = "openai/chat"` / `"openai/completion"`) -- both point at
+LiteLLM, but completion quality depends on pointing at an actual
+FIM-capable base model, not the chat/instruct models this project
+otherwise uses (see `editors/tabby/README.md`). Unlike the Copilot bonus
+above, Tabby needs no subscription at all -- the genuinely open-source
+answer to "alternative to GitHub Copilot" the user asked for.
 
 ## Local Ollama (optional)
 
@@ -237,8 +252,8 @@ custom-mode UI to that name is still a separate, per-editor step.
 ├── dashboard/
 │   └── app.py               # Workflow dashboard (Flask, port 8877)
 ├── editors/
-│   ├── cline/ zed/ aider/ openhands/ kilo-code/   # Per-editor setup + config templates
-│   ├── copilot/    # Bonus 6th, subscription-gated -- see its own README
+│   ├── cline/ zed/ aider/ openhands/ tabby/ kilo-code/   # Per-editor setup + config templates
+│   ├── copilot/    # Bonus 7th, subscription-gated -- see its own README
 │   └── README.md
 ├── scripts/
 │   ├── refresh_models.py    # Model auto-refresh

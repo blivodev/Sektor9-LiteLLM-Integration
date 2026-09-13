@@ -1,0 +1,39 @@
+# Tabby model config -- HTTP-only, no local model download needed.
+# Placeholders ({{LITELLM_MASTER_KEY}}) are filled in by editors/tabby/setup.py;
+# copy this by hand and replace them yourself if you'd rather not run that script.
+
+# Chat -- this is the one that matters most day to day (Tabby's chat panel /
+# "Ask Tabby" feature). Works well: these are the same instruct/chat models
+# every other editor here uses.
+[model.chat.http]
+kind = "openai/chat"
+model_name = "kilo-code"
+api_endpoint = "http://host.docker.internal:4000/v1"
+api_key = "{{LITELLM_MASTER_KEY}}"
+
+# Completion -- Tabby's inline "ghost text" autocomplete. Read this before
+# expecting Copilot-quality completions:
+#
+# Real inline completion is normally driven by a FIM (fill-in-the-middle)
+# BASE model (StarCoder2, DeepSeek-Coder-Base, CodeLlama, Qwen2.5-Coder-
+# Base) trained on <PRE>/<SUF>/<MID>-style prompts -- NOT an instruct/chat
+# model. Every model in this project's config.yaml (kilo-code included) is
+# a chat/instruct model, chosen for agentic tool-use, not FIM completion.
+# Pointing completion at kilo-code here will produce responses, but likely
+# mediocre ghost-text suggestions compared to a real FIM model.
+#
+# Two honest options:
+#   1. Leave this as-is and treat Tabby mainly as a chat/agent front end
+#      (its completions will still work, just not shine).
+#   2. Add a real FIM-capable model to config.yaml as its own model_name
+#      (e.g. a DeepSeek-Coder-Base / Qwen2.5-Coder-Base checkpoint from
+#      DeepInfra/Fireworks/OpenRouter, or a local Ollama one via
+#      scripts/setup_ollama.py) and point api_endpoint/model_name below at
+#      that instead. Not done automatically here -- picking the actual
+#      cheapest-capable FIM model deserves the same live-tested treatment
+#      refresh_models.py gives every other model, not a guess.
+[model.completion.http]
+kind = "openai/completion"
+model_name = "kilo-code"
+api_endpoint = "http://host.docker.internal:4000/v1"
+api_key = "{{LITELLM_MASTER_KEY}}"

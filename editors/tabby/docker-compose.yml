@@ -1,0 +1,26 @@
+# Tabby's own container -- separate from the main docker-compose.yaml on
+# purpose (this whole editor is optional, unlike LiteLLM/Postgres). Run from
+# the repo root:
+#   docker compose -f editors/tabby/docker-compose.yml up -d
+#
+# Reaches the main LiteLLM proxy via host.docker.internal, same pattern as
+# Blender/Ollama elsewhere in this project -- Tabby doesn't need to be on
+# the same Docker network as litellm_proxy for that to work.
+services:
+  tabby:
+    image: registry.tabbyml.com/tabbyml/tabby:latest
+    container_name: tabby
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data
+    command: serve
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # needed on Linux; a no-op, harmless default on Windows/Mac Docker Desktop
+    # No --gpus / --device cuda here: chat + completion both go through
+    # LiteLLM over HTTP (config in ./data/config.toml), so Tabby itself
+    # doesn't need to load or accelerate any model locally. If you later
+    # want its own local embedding model for codebase-context search to
+    # run faster, add GPU passthrough back yourself -- deliberately left
+    # out here to keep this opt-in piece as light as possible by default.

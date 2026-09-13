@@ -1,6 +1,6 @@
-# 5 supported editors/agents (+1 subscription-gated bonus)
+# 6 supported editors/agents (+1 subscription-gated bonus)
 
-All 5 point at the same LiteLLM proxy and the same 16-server MCP gateway
+All 6 point at the same LiteLLM proxy and the same 16-server MCP gateway
 — pick whichever fits how you like to work. Every candidate was checked
 for real, current maintenance status before being included here (3 other
 strong-looking candidates — **Void**, **Continue.dev**, and **Roo
@@ -16,9 +16,18 @@ reason).
 | [Zed](zed/) | Standalone editor (Rust) | `mcp-remote` bridge | ✅ Live-tested — config load confirmed, one real bug found & fixed |
 | [Aider](aider/) | Terminal tool | **not supported** | ✅ Live-tested LLM connectivity; MCP confirmed absent (not assumed) |
 | [OpenHands](openhands/) | Autonomous agent platform | native SHTTP | ⚠️ Researched, not personally installed/tested — heaviest install of the 5 |
+| [Tabby](tabby/) | Self-hosted server + IDE extension | (Tabby has no MCP client of its own) | ⚠️ Config verified against real docs + `setup.py` actually run (valid output confirmed); the multi-GB server container itself not personally pulled/started |
 
-Plus **[GitHub Copilot Chat](copilot/)** — not a 6th free option (needs
-an active, signed-in Copilot subscription just to unlock the extension
+**Tabby** is the odd one structurally: it's not an editor or extension by
+itself, it's its own self-hosted server that a thin IDE extension then
+talks to (`IDE extension -> Tabby -> LiteLLM -> your providers`, one hop
+more than the rest) — but it's genuinely free/open-source, no
+subscription of any kind, unlike the Copilot bonus below. Its own
+`README.md` has an important caveat about inline-completion quality with
+this project's current (chat/instruct, not FIM) models.
+
+Plus **[GitHub Copilot Chat](copilot/)** — not a free option (needs an
+active, signed-in Copilot subscription just to unlock the extension
 surface), so it's kept out of the table above, but documented and
 scripted the same way for whoever already pays for Copilot and wants it
 to reach LiteLLM's models/fallbacks too, via the open-source
@@ -29,7 +38,7 @@ session (preserves unrelated settings, idempotent re-runs, never writes
 the master key into the workspace-tracked `.vscode/mcp.json`) — not
 installed end-to-end, since that needs a real Copilot subscription.
 
-## Why these 5
+## Why these editors
 
 You asked for editors/tools other than "just Kilo Code + VS Code," using
 open source software that's actively maintained so new features can be

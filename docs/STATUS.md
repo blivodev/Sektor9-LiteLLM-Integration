@@ -78,8 +78,41 @@
   Code's `inputs` prompt instead, since that file could end up
   committed) — not installed end-to-end, since that needs a real
   signed-in Copilot subscription this session doesn't have. Kept out of
-  the main 5-editor comparison table since it needs that unrelated paid
-  subscription just to function, unlike the other 5.
+  the main editor comparison table since it needs that unrelated paid
+  subscription just to function, unlike the rest.
+- **Added Tabby ([TabbyML/tabby](https://github.com/TabbyML/tabby)) as a
+  6th real editor entry** (`editors/tabby/`) — the genuinely open-source,
+  no-subscription answer to "alternative to GitHub Copilot" the user
+  actually asked for, as opposed to the Copilot bridge above (which still
+  needs a paid Copilot account). Confirmed via real docs fetches before
+  writing anything: 32k+ GitHub stars, actively maintained (a VS Code
+  extension release in Dec 2025, a feature release in July 2025 — not
+  stale like Void/Continue.dev/Roo Code), and its `config.toml` schema
+  (`[model.chat.http]` / `[model.completion.http]`, `kind = "openai/
+  chat"` / `"openai/completion"`) confirmed against Tabby's own
+  documentation, not guessed.
+  - **Structurally different from every other editor here**: Tabby is
+    its own self-hosted server (`editors/tabby/docker-compose.yml`), not
+    an IDE/extension — a separate IDE extension talks to Tabby, which
+    talks to LiteLLM, one hop more than Cline/Zed/Copilot.
+  - **Honest completion-quality caveat documented, not glossed over**:
+    real inline "ghost text" completion wants a FIM (fill-in-the-middle)
+    base model (StarCoder2/DeepSeek-Coder-Base/Qwen2.5-Coder-Base), not
+    the chat/instruct models this project's `config.yaml` otherwise uses
+    for agentic tool-calling. Pointing completion at `kilo-code` (the
+    template's default) will work but likely won't match Copilot-quality
+    ghost text — documented in `editors/tabby/README.md` with the actual
+    fix (add a real FIM model as its own `config.yaml` entry) rather than
+    silently shipping a config that under-delivers without saying so.
+  - **`editors/tabby/setup.py` actually run for real** (not just
+    reviewed): produced valid TOML, correctly substituted the real
+    master key into both `[model.chat.http]` and
+    `[model.completion.http]`, and confirmed the output file
+    (`editors/tabby/data/config.toml`, which now holds that key) is
+    correctly gitignored. The Docker Compose file was validated with
+    `docker compose config` (resolves correctly) but the actual
+    multi-GB Tabby server image was not pulled/started this session —
+    same honesty line drawn for OpenHands.
 
 ## Session 3 additions
 

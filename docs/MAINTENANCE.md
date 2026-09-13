@@ -197,7 +197,21 @@ in one click. **Custom routing** hand-assigns each mode's model (the
 your keyed providers currently expose — click "Refresh from providers" to
 bypass its 5-minute cache.
 
-## Setting up a 6th editor
+## Setting up Tabby (open-source, self-hosted Copilot alternative)
+
+```bash
+python editors/tabby/setup.py
+docker compose -f editors/tabby/docker-compose.yml up -d
+```
+First command writes `editors/tabby/data/config.toml` with your master
+key filled in; second starts Tabby's own server at
+`http://127.0.0.1:8080` (first pull is a multi-GB image). Then install
+the Tabby extension for your IDE and point it at that URL. Read
+`editors/tabby/README.md`'s completion-quality note before expecting
+Copilot-level inline suggestions out of the box — chat has no such
+caveat.
+
+## Setting up another editor beyond these 7
 
 Follow the pattern in `editors/`: point its model provider at
 `http://127.0.0.1:4000/v1` + your master key, and its MCP client at either
@@ -205,7 +219,7 @@ Follow the pattern in `editors/`: point its model provider at
 transport) or via `npx -y mcp-remote http://127.0.0.1:4000/mcp --allow-http
 --header "Authorization:Bearer <master key>"` piped into a stdio MCP slot
 (if it doesn't). Check its *current* maintenance status first — 3 of the
-5 candidates researched for this project turned out to be
+candidates researched for this project turned out to be
 deprecated/unmaintained despite looking active at a glance.
 
 ## Adjusting model-selection preference

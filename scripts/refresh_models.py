@@ -390,6 +390,17 @@ LIVE_TESTERS = {
 
 # ───────────────────────── candidate selection ─────────────────────────────
 
+def is_free(m: dict) -> bool:
+    """True if a catalog entry is actually $0, not just 'price unknown'.
+    Covers both providers that report a real 0.0 price (rare but real, e.g.
+    some DeepInfra small models) and OpenRouter's ':free'-suffixed model
+    IDs, which sometimes come through with price_in/price_out as None
+    rather than 0 depending on when the catalog was fetched."""
+    if m.get("price_in") == 0 and m.get("price_out") == 0:
+        return True
+    return base_id(m["id"]).endswith(":free")
+
+
 def find_upgrade(current_model_id: str, catalog: list[dict], current_meta: dict | None, mode: str = "auto") -> dict | None:
     """
     mode="auto"/"cheapest"/"cheapest_from_best" (default): returns the
@@ -402,6 +413,22 @@ def find_upgrade(current_model_id: str, catalog: list[dict], current_meta: dict 
     available in the family (price only breaks ties between equally-new
     candidates), and recommends it even if pricier - accuracy/capability
     is what's being optimized for here, cost is secondary.
+
+    mode="free": returns the newest same-family candidate that is
+    genuinely $0 (see is_free()) - never a paid model, even a cheap one.
+    Scope note: this only ever looks WITHIN the family of the model you
+    already have configured (same as every other mode here) - it's an
+    upgrade-checker, not a from-scratch "find me any free model anywhere"
+    search. Most families simply have no free variant, in which case this
+    correctly finds nothing rather than jumping to an unrelated free model.
+
+    mode="local"/"local_cheapest"/"local_best": never reaches this
+    function directly for family/version comparison - see main()'s
+    handling via promote_local()/find_local_entry(). This function still
+    gets called for the modes NOT eligible for local routing (Debug/Plan/
+    Orchestrator, or Code/Ask when no local model is configured), using
+    the cloud-equivalent mode main() maps it to ("auto" / "cheapest" /
+    "most_accurate").
 
     mode="custom": always returns None - see set_preference.py; the
     caller (main()) treats this mode as "report only, never auto-apply"
@@ -425,12 +452,14 @@ def find_upgrade(current_model_id: str, catalog: list[dict], current_meta: dict 
             continue  # never go backward in version
         if cur_context is not None and m["context"] is not None and m["context"] < cur_context:
             continue  # never accept a smaller context window
+        if mode == "free" and not is_free(m):
+            continue  # free mode: a real $0 model or nothing
         candidates.append(m)
 
     if not candidates:
         return None
 
-    prioritize_newest = mode in ("most_accurate", "performance")
+    prioritize_newest = mode in ("most_accurate", "performance", "free")
 
     def sort_key(m):
         price_known = m["price_out"] is not None
@@ -442,7 +471,7 @@ def find_upgrade(current_model_id: str, catalog: list[dict], current_meta: dict 
     best = candidates[0]
 
     if prioritize_newest:
-        return best  # capability over cost - take the newest regardless of price
+        return best  # capability (or, for "free", simply eligibility) over cost
 
     # Cost-driven modes: only recommend if cheaper-or-equal to what's
     # running now (when price is known for both) - otherwise the cheapest
@@ -488,6 +517,66 @@ def save_config(cfg: dict):
     CONFIG_PATH.write_text(yaml.dump(cfg, sort_keys=False, default_flow_style=False), encoding="utf-8")
 
 
+# ───────────────────────── local (Ollama) routing ───────────────────────────
+# Separate from the price/version upgrade logic above: a local model has no
+# price or version to compare, it's a deliberate opt-in swap. Only reachable
+# when the user has explicitly chosen "local"/"local_cheapest"/"local_best"
+# via set_preference.py -- every other mode leaves local-ollama exactly
+# where scripts/setup_ollama.py put it (a Code/Ask fallback, never primary).
+
+LOCAL_ELIGIBLE_MODES = ("kilo-code", "kilo-ask")  # same scope setup_ollama.py itself uses
+
+
+def find_local_entry(cfg: dict) -> dict | None:
+    """Returns the local-ollama model_list entry (see setup_ollama.py's
+    OLLAMA_MODEL_NAME) if the user has run that setup script, else None."""
+    for e in cfg.get("model_list", []):
+        model = e.get("litellm_params", {}).get("model", "")
+        if model.startswith("ollama_chat/"):
+            return e
+    return None
+
+
+def promote_local(cfg: dict, model_name: str, local_entry: dict) -> str | None:
+    """Swaps `model_name`'s primary to the local model, demoting the
+    previous primary to a new first-fallback entry -- same never-delete
+    safety pattern as apply_upgrade(), just without a price/version
+    comparison since there's nothing to compare against. Returns a log
+    line, or None if `model_name` is already local (nothing to do)."""
+    entry = next((e for e in cfg["model_list"] if e["model_name"] == model_name), None)
+    if entry is None:
+        return None
+    old_full_model = entry["litellm_params"]["model"]
+    local_full_model = local_entry["litellm_params"]["model"]
+    if old_full_model == local_full_model:
+        return None  # already routed to local
+
+    old_api_key_env = entry["litellm_params"].get("api_key", "").replace("os.environ/", "") or None
+    prev_name = f"{model_name}-prev-{datetime.now(timezone.utc):%Y%m%d}"
+    cfg["model_list"].append({
+        "model_name": prev_name,
+        "litellm_params": {
+            "model": old_full_model,
+            **({"api_key": f"os.environ/{old_api_key_env}"} if old_api_key_env else {}),
+        },
+    })
+
+    entry["litellm_params"] = {
+        "model": local_full_model,
+        "api_base": local_entry["litellm_params"].get("api_base"),
+    }
+
+    fb_list = cfg.setdefault("router_settings", {}).setdefault("fallbacks", [])
+    for fb in fb_list:
+        if model_name in fb:
+            fb[model_name] = [prev_name] + [m for m in fb[model_name] if m != local_entry["model_name"]]
+            break
+    else:
+        fb_list.append({model_name: [prev_name]})
+
+    return f"{model_name}: {old_full_model} -> {local_full_model} (local, cloud model kept as fallback)"
+
+
 # ───────────────────────── git + docker ─────────────────────────────────────
 
 def run(cmd: list[str]) -> subprocess.CompletedProcess:
@@ -527,6 +616,39 @@ def main():
     print(f"Selection preference: {pref_mode}")
 
     cfg = load_config()
+    log_lines: list[str] = []
+    applied = False
+
+    # "local"/"local_cheapest"/"local_best": handle the local-routing part
+    # up front, then fall through to the normal per-entry loop below using
+    # whatever cloud-equivalent mode this maps to (for Debug/Plan/
+    # Orchestrator, which never get routed to local, and for Code/Ask too
+    # if no local model turns out to be configured).
+    LOCAL_CLOUD_EQUIVALENT = {"local": "auto", "local_cheapest": "cheapest", "local_best": "most_accurate"}
+    effective_mode = pref_mode
+    if pref_mode in LOCAL_CLOUD_EQUIVALENT:
+        local_entry = find_local_entry(cfg)
+        if not local_entry:
+            print(
+                f"[warn] Preference is '{pref_mode}' but no local Ollama model is configured yet "
+                f"-- run `python scripts/setup_ollama.py` first. Falling back to "
+                f"'{LOCAL_CLOUD_EQUIVALENT[pref_mode]}' cloud selection for this run."
+            )
+        else:
+            for model_name in LOCAL_ELIGIBLE_MODES:
+                if dry_run:
+                    entry = next((e for e in cfg["model_list"] if e["model_name"] == model_name), None)
+                    if entry and entry["litellm_params"]["model"] != local_entry["litellm_params"]["model"]:
+                        line = f"would route {model_name} -> local ({local_entry['litellm_params']['model']})"
+                        log_lines.append(f"[dry-run] {line}")
+                        print(f"[dry-run] {line}")
+                    continue
+                line = promote_local(cfg, model_name, local_entry)
+                if line:
+                    log_lines.append(f"[applied] {line}")
+                    print(f"[applied] {line}")
+                    applied = True
+        effective_mode = LOCAL_CLOUD_EQUIVALENT[pref_mode]
 
     print("Fetching LiteLLM's price/context map (primary pricing source)...")
     price_map = fetch_litellm_price_map()
@@ -543,13 +665,14 @@ def main():
             catalog = enrich_with_price_map(catalog, provider, price_map)
         catalogs[provider] = catalog
 
-    log_lines = []
-    applied = False
+    local_active = pref_mode in LOCAL_CLOUD_EQUIVALENT and find_local_entry(cfg) is not None
 
     for entry in list(cfg["model_list"]):
         model_name = entry["model_name"]
         if model_name.endswith(tuple(f"-prev-{d}" for d in range(20260101, 20270101))):
             continue  # skip our own previously-demoted entries
+        if local_active and model_name in LOCAL_ELIGIBLE_MODES:
+            continue  # already handled above (routed to local) -- don't also propose a cloud alternative
         litellm_model = entry["litellm_params"]["model"]
         provider, rest = parse_model_ref(litellm_model)
         catalog = catalogs.get(provider, [])
@@ -557,7 +680,7 @@ def main():
             continue
 
         current_meta = next((m for m in catalog if base_id(m["id"]) == base_id(rest)), None)
-        candidate = find_upgrade(rest, catalog, current_meta, mode=pref_mode)
+        candidate = find_upgrade(rest, catalog, current_meta, mode=effective_mode)
         if not candidate:
             continue
 

@@ -34,3 +34,13 @@
 ## 2026-09-13 18:26 UTC
 
 - No upgrade candidates found this run.
+
+## 2026-09-13 18:43 UTC
+
+- [dry-run] would consider: kilo-code: deepseek-ai/DeepSeek-V4-Flash-0731 -> deepseek-ai/DeepSeek-V4-Flash (deepinfra, $0.18->$0.18 per 1M out)
+- [dry-run] would consider: kilo-code-fallback-2: deepseek-v4-flash-0731 -> accounts/fireworks/models/deepseek-v4p1-flash (fireworks_ai, $0.66->$0.66 per 1M out)
+
+## 2026-09-13 18:43 UTC
+
+- No changes this run.
+

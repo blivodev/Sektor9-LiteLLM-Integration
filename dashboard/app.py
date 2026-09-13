@@ -14,11 +14,14 @@ Usage:
 """
 from __future__ import annotations
 
+import html
+import os
+import secrets
 import subprocess
 import sys
 from pathlib import Path
 
-from flask import Flask, request, redirect, url_for
+from flask import Flask, abort, request, session
 
 try:
     import requests
@@ -30,7 +33,43 @@ ROOT = Path(__file__).resolve().parent.parent
 ENV_PATH = ROOT / ".env"
 LITELLM_URL = "http://localhost:4000"
 
+# Only these two containers may ever be named on the /logs route -- closes
+# both the reflected-XSS and the docker-argument-injection findings from the
+# security review (the raw ?c= value used to be interpolated into HTML *and*
+# passed straight to `docker logs` as an argv item).
+KNOWN_CONTAINERS = {"litellm_proxy", "litellm_db"}
+
 app = Flask(__name__)
+# A fresh random secret per process is fine here: this is a single-user,
+# localhost-only dashboard, so a restart just means the browser silently
+# gets a new session (and a new CSRF token) next load -- nothing persists
+# that needs to survive that. Only used to sign the session cookie that
+# carries the CSRF token below.
+app.secret_key = secrets.token_hex(32)
+
+
+def csrf_token() -> str:
+    """Get-or-create a per-session CSRF token, stored server-side via the
+    signed session cookie. Every state-changing form embeds it as a hidden
+    field; every state-changing POST verifies it before doing anything."""
+    tok = session.get("csrf_token")
+    if not tok:
+        tok = secrets.token_hex(20)
+        session["csrf_token"] = tok
+    return tok
+
+
+def require_csrf() -> None:
+    submitted = request.form.get("csrf_token", "")
+    expected = session.get("csrf_token", "")
+    if not expected or not secrets.compare_digest(submitted, expected):
+        abort(403, "Missing or invalid CSRF token -- reload the page and try again.")
+    # Defense in depth: a same-origin request should carry a matching
+    # Origin/Referer. Cross-site posts (the actual CSRF attack shape) either
+    # omit it or carry the attacker's origin.
+    origin = request.headers.get("Origin") or request.headers.get("Referer") or ""
+    if origin and not (origin.startswith("http://localhost:8877") or origin.startswith("http://127.0.0.1:8877")):
+        abort(403, "Request origin did not match the dashboard -- refused.")
 
 PAGE = """<!doctype html><html><head><meta charset="utf-8">
 <title>LiteLLM Workflow Dashboard</title>
@@ -202,6 +241,7 @@ def read_env_dict() -> dict:
 @app.route("/keys", methods=["GET", "POST"])
 def keys():
     if request.method == "POST":
+        require_csrf()
         env = read_env_dict()
         for var, _ in ENV_VAR_LABELS:
             val = request.form.get(var, "").strip()
@@ -223,7 +263,6 @@ def keys():
                 lines.append(f"{k}={v}")
         ENV_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")
         try:
-            import os
             os.chmod(ENV_PATH, 0o600)  # owner-only where the OS honors it -- this file holds every secret
         except OSError:
             pass
@@ -252,13 +291,19 @@ def keys():
     <p>Leave a field blank to keep its current value. Saving writes <code>.env</code>,
     restarts the litellm container, and re-runs the Cline/Zed install scripts so
     every configured editor picks up the change automatically.</p>
-    <form method="post">{rows}<button type="submit">Save &amp; apply everywhere</button></form></div>"""
+    <form method="post">{rows}<input type="hidden" name="csrf_token" value="{csrf_token()}">
+    <button type="submit">Save &amp; apply everywhere</button></form></div>"""
     return PAGE.format(content=content)
 
 
 @app.route("/logs")
 def logs():
-    which = request.args.get("c", "litellm_proxy")
+    requested = request.args.get("c", "litellm_proxy")
+    # Only ever pass one of the two known, hardcoded container names to
+    # `docker logs` and into the HTML -- an unrestricted value here was both
+    # a reflected-XSS hole (the raw value was echoed into the page) and a
+    # docker-argument-injection hole (it went straight into the argv list).
+    which = requested if requested in KNOWN_CONTAINERS else "litellm_proxy"
     # docker logs can emit bytes that aren't valid in the default Windows
     # console codepage (cp1252) -- force UTF-8 with replacement so this
     # never crashes on real log content (confirmed live: it did, on real
@@ -266,9 +311,9 @@ def logs():
     r = subprocess.run(["docker", "logs", which, "--tail", "200"],
                         capture_output=True, text=True, encoding="utf-8", errors="replace")
     text = (r.stdout or "") + (r.stderr or "") or "(no output)"
-    content = f"""<div class="card"><h2>Logs — {which}</h2>
+    content = f"""<div class="card"><h2>Logs — {html.escape(which)}</h2>
     <p><a href="/logs?c=litellm_proxy">litellm_proxy</a> · <a href="/logs?c=litellm_db">litellm_db</a></p>
-    <pre>{text.replace('<', '&lt;')}</pre></div>"""
+    <pre>{html.escape(text)}</pre></div>"""
     return PAGE.format(content=content)
 
 

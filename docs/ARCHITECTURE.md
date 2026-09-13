@@ -163,11 +163,30 @@ key is duplicated.
 ## Model selection preference
 
 `scripts/set_preference.py` writes `.model_preferences.json` (gitignored
-— personal, not project config), which `refresh_models.py` reads to bias
-`find_upgrade()`'s sort order: cost-first (`auto`/`cheapest`/
-`cheapest_from_best`) vs. capability-first (`most_accurate`/
-`performance`, which takes the newest version regardless of price) vs.
-`custom` (never auto-apply, always report-only).
+— personal, not project config), which `refresh_models.py` reads to pick
+one of ten modes:
+
+| Mode | Behavior |
+|---|---|
+| `auto` / `cheapest_from_best` | Cost-first: cheapest same-family candidate, strong models only. Default. |
+| `cheapest` | Cost-first: absolute lowest price, even over a newer version. |
+| `most_accurate` / `performance` | Capability-first: always the newest version, cost secondary. |
+| `free` | Only a genuinely $0 same-family candidate (see `is_free()`); does nothing if the family has no free variant — it never jumps to an unrelated free model. |
+| `local` | Routes **Code/Ask only** to your local Ollama model as primary (see below); Debug/Plan/Orchestrator are untouched. |
+| `local_cheapest` | Same local routing for Code/Ask; everything else (and Code/Ask too, if no local model is set up yet) uses `cheapest`. |
+| `local_best` | Same local routing for Code/Ask; everything else uses `most_accurate`. |
+| `custom` | Never auto-apply anything — always report-only, regardless of flags. |
+
+The three `local*` modes need `scripts/setup_ollama.py` to have been run
+first; if it hasn't, `refresh_models.py` prints a warning and falls back to
+that mode's plain cloud equivalent (`auto`/`cheapest`/`most_accurate`) for
+that run rather than silently doing nothing. Local routing is a direct
+primary/fallback swap (`promote_local()`), not a price/version comparison
+— there's nothing to compare a local model's price against, so it's a
+deliberate opt-in choice via preference, distinct from the always-on,
+fallback-only local safety net `setup_ollama.py` sets up by default (see
+"Local Ollama" below) — that default never promotes local to primary on
+its own; only explicitly choosing one of these three preferences does.
 
 ## Repository layout
 

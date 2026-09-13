@@ -92,6 +92,15 @@ use Claude or Gemini instead of your usual coding models, they're
 available too — just pick them from Kilo Code's model dropdown, they're
 not tied to any particular mode.
 
+## Choosing how models get picked for you
+
+Run `python scripts/set_preference.py` any time to tell the automatic
+model-refresher what you care about most: cheapest, most capable, only
+free models, or routing your everyday coding to a local model on your own
+PC instead of the cloud at all (needs `python scripts/setup_ollama.py`
+run first). It just asks a numbered question and remembers your answer —
+re-run it whenever you change your mind, nothing is permanent.
+
 ## What if something breaks?
 
 **"Kilo Code says it can't connect"**

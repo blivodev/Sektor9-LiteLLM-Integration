@@ -1,5 +1,40 @@
 # Status, bugs found & fixed, potential upgrades
 
+## Session 3 additions (this round)
+
+- **Fixed 3 real, security-review-flagged bugs in `dashboard/app.py`**, all
+  live-tested with an actual curl probe before/after:
+  1. **Reflected XSS + docker-argument-injection in `/logs`**: the `?c=`
+     query param was echoed straight into the page's HTML *and* passed
+     straight to `docker logs <c>` as an argv item, with no validation at
+     all. Fixed with a hardcoded allowlist (`{"litellm_proxy", "litellm_db"}`)
+     — anything else silently falls back to `litellm_proxy` — plus
+     `html.escape()` on the one still-legitimate value. Verified live:
+     `?c=<script>alert(1)</script>` now renders `Logs — litellm_proxy`.
+  2. **CSRF on `/keys`'s POST** (writes `.env`, force-recreates the
+     container — a state-changing endpoint with zero protection). Fixed
+     with a per-session token (`secrets.token_hex`, stored via Flask's
+     signed session cookie) embedded as a hidden field and checked with
+     `secrets.compare_digest`, plus an Origin/Referer check as defense in
+     depth. Verified live: an unauthenticated POST now gets `403`; a POST
+     carrying the real page's token still gets `200`.
+- **Added 4 new model-selection preference modes** (`scripts/set_preference.py`,
+  `scripts/refresh_models.py`), bringing the total to 10 — see
+  `docs/ARCHITECTURE.md` for the full table:
+  - `free` — only picks a genuinely-$0 same-family candidate; verified
+    live it correctly finds nothing when a family has no free variant,
+    rather than falsely reporting one or reaching outside the family.
+  - `local` / `local_cheapest` / `local_best` — deliberately promotes the
+    local Ollama model (from `setup_ollama.py`) to PRIMARY for Code/Ask
+    only, demoting the previous cloud primary to a fallback (same
+    never-delete safety pattern as every other upgrade here); Debug/Plan/
+    Orchestrator are never touched by this. If no local model is set up
+    yet, it warns and falls back to that mode's plain cloud equivalent
+    instead of silently no-op'ing. Verified with a scripted test against a
+    deep-copied config (never the real one): promotion, fallback-chain
+    ordering, idempotency (second call is a no-op), and confirmed the real
+    `config.yaml` on disk was untouched by the test.
+
 ## Current status (2026-09-13, session 2)
 
 | Area | Status |

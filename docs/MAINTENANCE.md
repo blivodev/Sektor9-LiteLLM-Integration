@@ -201,8 +201,14 @@ deprecated/unmaintained despite looking active at a glance.
 ```bash
 python scripts/set_preference.py
 ```
-Changes whether `refresh_models.py` optimizes for cost or capability —
-see `docs/ARCHITECTURE.md`. Stored in `.model_preferences.json` (gitignored).
+Changes whether `refresh_models.py` optimizes for cost, capability, free
+tiers, or your local Ollama model — 10 modes, see `docs/ARCHITECTURE.md`
+for the full table. Stored in `.model_preferences.json` (gitignored). If
+you pick one of the three `local*` modes before running
+`scripts/setup_ollama.py`, `refresh_models.py` will say so and use that
+mode's cloud equivalent instead of doing nothing — run
+`setup_ollama.py` first, then re-run `refresh_models.py`, to actually get
+local routing.
 
 ## Setting up local Ollama
 

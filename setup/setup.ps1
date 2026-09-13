@@ -158,6 +158,25 @@ if ($needsFix) {
     Write-Host "$kiloJsonPath already valid - left as-is."
 }
 
+# ---------- 4c. Model auto-refresh ----------
+Write-Step "Model auto-refresh (optional)"
+Write-Host "scripts/refresh_models.py periodically checks for cheaper/newer models at your"
+Write-Host "configured providers and safely upgrades config.yaml (live-tested, old model kept"
+Write-Host "as a fallback, every change is its own git commit). See that file's docstring."
+$pythonExe = (Get-Command python -ErrorAction SilentlyContinue).Source
+if (-not $pythonExe) { $pythonExe = (Get-Command python3 -ErrorAction SilentlyContinue).Source }
+if ($pythonExe) {
+    & $pythonExe -m pip install --quiet -r (Join-Path $root "scripts\requirements.txt")
+    $setupSchedule = Read-Host "Set up a weekly scheduled run now? (y/N)"
+    if ($setupSchedule -eq "y") {
+        & powershell -ExecutionPolicy Bypass -File (Join-Path $root "scripts\schedule_refresh.ps1")
+    } else {
+        Write-Host "Skipped. Run it any time yourself: python `"$(Join-Path $root 'scripts\refresh_models.py')`" --dry-run"
+    }
+} else {
+    Write-Host "Python not found on PATH - skipping. Install Python 3, then optionally run scripts\schedule_refresh.ps1 later." -ForegroundColor Yellow
+}
+
 # ---------- 5. Manual steps ----------
 Write-Step "Manual step required: Kilo Code provider wiring"
 Write-Host @"

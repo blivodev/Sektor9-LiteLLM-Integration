@@ -6,13 +6,11 @@ own model, and every model has a 2-deep, cross-provider fallback chain so a
 single provider's outage, rate limit, or exhausted credit doesn't stop you
 mid-task — LiteLLM just retries the next provider in line.
 
-## ⚠️ One thing you need to do
-
-Add your **Fireworks AI** key to [`.env`](.env) (`FIREWORKS_AI_API_KEY=`) —
-get one at https://fireworks.ai/account/api-keys. Until it's set, **Plan**
-mode and the Fireworks-hosted fallback legs (used by Code, Debug, Ask, and
-Orchestrator) will fail instead of falling back further. OpenRouter and
-DeepInfra keys are already filled in and tested working.
+All 5 provider keys (OpenRouter, DeepInfra, Fireworks, Anthropic, Gemini)
+are filled in and tested working. Still open: real credentials for the
+`meshy_3d`/`elevenlabs`/`suno_music` MCP servers (optional — see MCP gateway
+section below), and the host-companion apps (Unity/Godot/Nuclear/Windows
+desktop control) documented in `setup/README.md`.
 
 ## Setting this up on another machine
 
@@ -32,6 +30,35 @@ and more); most are healthy and tested, a few are intentionally inert until
 you add their credentials to `.env`, and a couple (Blender, Godot, Unity,
 Nuclear, Windows desktop control) need their real application running on
 your machine rather than in the container — see `setup/README.md` for those.
+
+## Model auto-refresh
+
+[`scripts/refresh_models.py`](scripts/refresh_models.py) periodically checks
+whether your configured providers now offer a cheaper/newer model in the
+same family as one you're already running, and if so, upgrades it — so you
+don't have to manually revisit `config.yaml` every time a provider ships a
+new checkpoint. It's built to never silently break anything:
+
+- Every candidate is **live-tested** (a real request through the provider's
+  own API) before `config.yaml` is touched at all.
+- The **old model is kept**, demoted to be the new first fallback for that
+  slot — if the "upgrade" is worse in practice, the proxy just falls back.
+- Every applied change is its **own git commit** with the price/context
+  comparison in the message.
+- A summary is appended to `MODEL_REFRESH_LOG.md` on every run, whether or
+  not anything changed.
+
+It's heuristic (price + context length + version number — providers don't
+expose a "quality" score), which is exactly why the safety net above exists.
+
+```bash
+python scripts/refresh_models.py --dry-run   # see candidates, change nothing
+python scripts/refresh_models.py --restart   # apply validated upgrades + restart the container
+```
+
+`setup/setup.ps1` / `setup/setup.sh` offer to schedule this weekly for you
+(Windows Task Scheduler / cron) — see `scripts/schedule_refresh.ps1`/`.sh`
+to set that up later if you skipped it.
 
 After editing `.env`, restart the stack so the container picks it up:
 

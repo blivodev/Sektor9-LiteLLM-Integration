@@ -161,6 +161,24 @@ else
   echo "$KILO_JSON already valid — left as-is."
 fi
 
+# ---------- 4c. Model auto-refresh ----------
+step "Model auto-refresh (optional)"
+echo "scripts/refresh_models.py periodically checks for cheaper/newer models at your"
+echo "configured providers and safely upgrades config.yaml (live-tested, old model kept"
+echo "as a fallback, every change is its own git commit). See that file's docstring."
+PYTHON=$(command -v python3 || command -v python || true)
+if [ -n "$PYTHON" ]; then
+  "$PYTHON" -m pip install --quiet -r "$ROOT/scripts/requirements.txt"
+  read -r -p "Set up a weekly scheduled run now (cron)? (y/N): " setup_schedule
+  if [ "$setup_schedule" = "y" ]; then
+    bash "$ROOT/scripts/schedule_refresh.sh"
+  else
+    echo "Skipped. Run it any time yourself: $PYTHON \"$ROOT/scripts/refresh_models.py\" --dry-run"
+  fi
+else
+  echo "Python not found on PATH — skipping. Install Python 3, then optionally run scripts/schedule_refresh.sh later."
+fi
+
 # ---------- 5. Manual steps ----------
 step "Manual step required: Kilo Code provider wiring"
 cat <<EOF

@@ -1,1 +1,5 @@
 .env
+__pycache__/
+*.pyc
+scripts/refresh_models.cron.log
+scripts/refresh_models.task.log

@@ -318,34 +318,49 @@ LIVE_TESTERS = {
 # ───────────────────────── candidate selection ─────────────────────────────
 
 def find_upgrade(current_model_id: str, catalog: list[dict], current_meta: dict | None) -> dict | None:
-    """Returns the best strictly-better-or-equal same-family candidate, or None."""
+    """
+    Returns the CHEAPEST same-family candidate that's at least as new a
+    version and at least as large a context window as the current model -
+    NOT the newest one that happens to be no pricier. "Latest" only breaks
+    ties between equally-priced candidates; price is what actually decides.
+    This is the whole point: you don't want the newest checkpoint if a
+    cheaper one in the same family is equally capable for the job.
+    """
     fam = family_key(current_model_id)
     cur_ver = version_tuple(current_model_id)
     cur_price_out = current_meta.get("price_out") if current_meta else None
     cur_context = current_meta.get("context") if current_meta else None
 
-    best = None
+    candidates = []
     for m in catalog:
         if base_id(m["id"]) == base_id(current_model_id):
             continue  # same model, not an upgrade
         if family_key(m["id"]) != fam:
             continue
         if version_tuple(m["id"]) < cur_ver:
-            continue  # don't downgrade versions
+            continue  # never go backward in version
+        if cur_context is not None and m["context"] is not None and m["context"] < cur_context:
+            continue  # never accept a smaller context window
+        candidates.append(m)
 
-        # Price: only compare if BOTH sides have known pricing. If either
-        # side is unknown, don't block on price - but note it in the log.
-        if cur_price_out is not None and m["price_out"] is not None:
-            if m["price_out"] > cur_price_out * 1.05:  # allow tiny rounding slack
-                continue
+    if not candidates:
+        return None
 
-        # Context: never accept a strictly smaller context window.
-        if cur_context is not None and m["context"] is not None:
-            if m["context"] < cur_context:
-                continue
+    def sort_key(m):
+        price_known = m["price_out"] is not None
+        price = m["price_out"] if price_known else float("inf")
+        ver = version_tuple(m["id"])
+        return (not price_known, price, tuple(-v for v in ver))  # cheapest first, newest breaks ties
 
-        if best is None or version_tuple(m["id"]) > version_tuple(best["id"]):
-            best = m
+    candidates.sort(key=sort_key)
+    best = candidates[0]
+
+    # Only actually recommend it if it's cheaper-or-equal to what's running
+    # now (when price is known for both) - otherwise the cheapest qualifying
+    # candidate still costs more than staying put, so there's no upgrade.
+    if cur_price_out is not None and best["price_out"] is not None:
+        if best["price_out"] > cur_price_out * 1.05:  # tiny rounding slack
+            return None
     return best
 
 

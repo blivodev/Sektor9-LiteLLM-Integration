@@ -8,7 +8,7 @@ own and they'll appear automatically, no other changes needed:
 
 | Filename | What to capture |
 |---|---|
-| `litellm-login.png` | `http://localhost:4000` — the LiteLLM login screen (before logging in) |
+| `litellm-login.png` | `http://127.0.0.1:4000` — the LiteLLM login screen (before logging in) |
 | `litellm-dashboard.png` | After logging in (username `admin`, password your `LITELLM_MASTER_KEY`) — the main dashboard with the left sidebar visible |
 
 Nice-to-haves if you want to expand the guide further — same idea, just

@@ -27,6 +27,6 @@ Copy [`config.toml.template`](config.toml.template) into your OpenHands
 working directory as `config.toml`, fill in your `LITELLM_MASTER_KEY`
 twice (LLM section + MCP section). Per OpenHands' docs, its `[mcp]`
 config supports SHTTP (Streamable HTTP) servers **natively** — pointing
-straight at `http://localhost:4000/mcp` with an `api_key`, no
+straight at `http://127.0.0.1:4000/mcp` with an `api_key`, no
 `mcp-remote` bridge needed (unlike Cline/Zed, which lack a native remote
 MCP transport).

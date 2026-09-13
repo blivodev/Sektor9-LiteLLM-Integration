@@ -59,7 +59,7 @@ $healthy = $false
 $attempts = 0
 while (-not $healthy -and $attempts -lt 30) {
     try {
-        $resp = Invoke-WebRequest -Uri "http://localhost:4000/health/liveliness" -UseBasicParsing -TimeoutSec 3
+        $resp = Invoke-WebRequest -Uri "http://127.0.0.1:4000/health/liveliness" -UseBasicParsing -TimeoutSec 3
         if ($resp.StatusCode -eq 200) { $healthy = $true }
     } catch {}
     if (-not $healthy) {
@@ -69,7 +69,7 @@ while (-not $healthy -and $attempts -lt 30) {
 }
 
 if ($healthy) {
-    Write-Log "LiteLLM proxy is up at http://localhost:4000"
+    Write-Log "LiteLLM proxy is up at http://127.0.0.1:4000"
 } else {
     Write-Log "LiteLLM did not report healthy yet. Check with: docker compose logs litellm"
 }

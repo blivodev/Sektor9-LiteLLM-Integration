@@ -31,7 +31,7 @@ Code), so this is a UI step:
 
 1. Open Cline's settings (gear icon in its panel).
 2. **API Provider** → **OpenAI Compatible**.
-3. **Base URL**: `http://localhost:4000/v1`
+3. **Base URL**: `http://127.0.0.1:4000/v1`
 4. **API Key**: your `LITELLM_MASTER_KEY` from `.env`.
 5. **Model ID**: any of `kilo-code` / `kilo-ask` / `kilo-debug` /
    `kilo-plan` / `kilo-orchestrator` / `claude` / `gemini` (same models

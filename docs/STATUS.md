@@ -1,6 +1,68 @@
 # Status, bugs found & fixed, potential upgrades
 
-## Session 3 additions (this round)
+## Session 4 additions (this round)
+
+- **Real root cause found for "Kilo Code hangs forever / can't reach
+  LiteLLM or the dashboard": `localhost` resolves to `::1` (IPv6) first
+  on this machine, and Docker Desktop's port publishing here doesn't
+  answer on the IPv6 loopback** — only `127.0.0.1` (IPv4). Kilo Code's
+  own global config (`~/.config/kilo/kilo.jsonc`, written by its Settings
+  UI) had `"baseURL": "http://localhost:4000/v1"`, so every request from
+  Kilo Code silently hung on a dead IPv6 connection attempt instead of
+  erroring — same reason the LiteLLM Admin UI and the dashboard failed to
+  load in a real browser. **Fixed** by changing that `baseURL` to
+  `http://127.0.0.1:4000/v1`, and by replacing every `localhost:4000` /
+  `localhost:8877` in this repo's own configs/docs/scripts with
+  `127.0.0.1` for the same reason (grep for `127.0.0.1` if you add a new
+  one yourself — don't reintroduce `localhost`).
+  - **Honest note on how this was diagnosed**: for a good stretch of this
+    session, curl run from this Bash tool against `http://localhost:4000`
+    reliably returned nothing (`HTTP 000`), which was *wrongly* read as
+    "LiteLLM itself is hung" — leading to disabling several MCP servers
+    and adding `timeout:` to every entry, none of which actually did
+    anything (all reverted). The same curl against `http://127.0.0.1:4000`
+    at the *exact same moment* returned `200 OK` — proving the proxy was
+    fine all along and the `localhost` lookup itself was the broken part,
+    in this shell specifically. If LiteLLM (or the dashboard) ever again
+    seems unreachable, check `127.0.0.1` before assuming anything is
+    actually broken.
+- **Dashboard now covers model-selection preference, custom per-mode
+  routing, and a live model catalog** — no more running scripts by hand
+  for these:
+  - `/preference`: pick any of the 10 modes; anything but "custom"
+    applies immediately (writes the preference, runs
+    `refresh_models.py --restart` for real, restarts the container) in
+    one click.
+  - `/routing`: hand-edit exactly which model backs each mode
+    (kilo-code/ask/debug/plan/orchestrator, claude, gemini), or add a
+    brand-new mode/model slot. This is the mechanism behind the "custom"
+    preference. Reads/writes `config.yaml` via `ruamel.yaml` (not plain
+    PyYAML) specifically so the file's extensive comments survive the
+    round-trip — confirmed live (61 comment lines intact after a real
+    write) and tuned to match the original indent style so a one-field
+    change produces close to a one-line diff, not a full reformat.
+  - `/models` + `/api/models`: a searchable, live catalog of every model
+    your keyed providers currently expose (723 real entries returned in
+    testing), price-enriched via the same LiteLLM price map
+    `refresh_models.py` uses, cached 5 minutes to avoid hammering
+    provider APIs on every page load.
+  - Note: adding a mode here only wires up the LiteLLM side (makes a
+    `model_name` addressable). Pointing an editor's own custom-mode UI
+    (e.g. Kilo Code's Settings → Modes) at that name is still a separate,
+    manual step in that editor.
+- **Fixed a second CSRF-adjacent bug from an automated review**: the
+  Origin/Referer check added last session used `.startswith("http://
+  localhost:8877")`, which a string like `"http://localhost:8877.evil.
+  com"` also satisfies. Replaced with `urlparse()` + exact
+  scheme/hostname/port comparison; verified against that exact bypass
+  string plus several variants (all correctly denied) and the legitimate
+  origin (still allowed).
+- Considered building dashboard-equivalent UI directly inside every
+  editor/extension; descoped at the user's call in favor of the one
+  dashboard covering all of them, given it's already reachable from
+  any editor via a browser link.
+
+## Session 3 additions
 
 - **Fixed 3 real, security-review-flagged bugs in `dashboard/app.py`**, all
   live-tested with an actual curl probe before/after:
@@ -52,7 +114,7 @@
 | Git repo | ✅ Pushed to [github.com/YOUR_USERNAME/litellm-setup](https://github.com/YOUR_USERNAME/litellm-setup) |
 | Host-companion apps (Unity/Godot/Nuclear/Windows-control) | ⏳ Documented, not yet actually set up |
 
-## Session 2 additions (this round)
+## Session 2 additions
 
 - **Fixed a real DeepInfra bug**: the balance extension read `stripe_balance`/
   `limit`, which are a static auto-recharge ceiling setting that never

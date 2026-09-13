@@ -188,6 +188,29 @@ fallback-only local safety net `setup_ollama.py` sets up by default (see
 "Local Ollama" below) — that default never promotes local to primary on
 its own; only explicitly choosing one of these three preferences does.
 
+All of this is also reachable from the dashboard's **Preference** page —
+same 10 modes, same behavior, just a click instead of a terminal command,
+and anything but "custom" applies immediately (writes the preference,
+runs the refresher for real, restarts the container). Choosing "custom"
+there points you at **Custom routing** (see next section).
+
+## Custom per-mode routing (dashboard)
+
+`dashboard/app.py`'s `/routing` page is the "custom" preference made
+concrete: every mode's exact model, editable directly, instead of letting
+`refresh_models.py` choose. It reads/writes `config.yaml` through
+`ruamel.yaml` rather than plain PyYAML specifically to preserve every
+comment in the file across a save (plain `yaml.safe_load`/`yaml.dump`, as
+`refresh_models.py` itself still uses, would silently strip all of them —
+a real, still-open tradeoff on that script's side, acceptable there since
+it runs occasionally and unattended, not acceptable for a page meant to
+be saved from interactively and often). `/models` (`/api/models` as JSON)
+backs its model picker: the same provider fetchers + LiteLLM price map
+`refresh_models.py` uses, cached in memory for 5 minutes, listing only
+providers with a key currently set. Adding a brand-new mode here only
+creates an addressable `model_name` in LiteLLM — wiring an editor's own
+custom-mode UI to that name is still a separate, per-editor step.
+
 ## Repository layout
 
 ```

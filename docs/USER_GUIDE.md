@@ -34,7 +34,7 @@ conflict with anything else installed on your PC.
 
 | Piece | What it actually does |
 |---|---|
-| **LiteLLM** | The switchboard. Runs at `http://localhost:4000` on your own machine — nothing about it is on the internet, only reachable from your PC. |
+| **LiteLLM** | The switchboard. Runs at `http://127.0.0.1:4000` on your own machine — nothing about it is on the internet, only reachable from your PC. |
 | **Postgres** | A database, used only to remember usage/spend and account keys for the switchboard itself. |
 | **Docker Desktop** | The app that runs the two containers (LiteLLM + Postgres). If it's not running, nothing else works. |
 | **Kilo Code** | The AI coding assistant extension in VS Code — what you actually type into. |
@@ -43,7 +43,7 @@ conflict with anything else installed on your PC.
 
 ## The easy way: the dashboard
 
-Run `python dashboard/app.py` and open http://localhost:8877 — one simple
+Run `python dashboard/app.py` and open http://127.0.0.1:8877 — one simple
 page showing whether everything's running, how much credit you have left
 per provider, which tools are healthy, and a page to update your API keys
 that automatically applies the change everywhere it's needed. Skip
@@ -57,7 +57,7 @@ straight there if you don't want to check things manually below.
    ```
    You should see two containers, `litellm_proxy` and `litellm_db`, both
    saying "Up".
-2. Open `http://localhost:4000` in a browser — you should see a login
+2. Open `http://127.0.0.1:4000` in a browser — you should see a login
    screen like this:
 
    ![LiteLLM login screen](images/litellm-login.png)

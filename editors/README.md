@@ -29,10 +29,10 @@ candidates above.
 
 Every editor here needs two things pointed at LiteLLM:
 1. **The model provider** — an OpenAI-compatible base URL
-   (`http://localhost:4000/v1`) + your `LITELLM_MASTER_KEY`.
+   (`http://127.0.0.1:4000/v1`) + your `LITELLM_MASTER_KEY`.
 2. **The MCP gateway** — either natively (OpenHands) or via
    [`mcp-remote`](https://www.npmjs.com/package/mcp-remote) bridging
-   `http://localhost:4000/mcp` into a local stdio process (everything
+   `http://127.0.0.1:4000/mcp` into a local stdio process (everything
    else here).
 
 Where a tool's provider settings aren't in a plain file (Cline, Kilo

@@ -60,7 +60,7 @@ def main():
     data["mcpServers"]["litellm-gateway"] = {
         "command": "npx",
         "args": [
-            "-y", "mcp-remote", "http://localhost:4000/mcp",
+            "-y", "mcp-remote", "http://127.0.0.1:4000/mcp",
             "--allow-http", "--header", "Authorization:${LITELLM_AUTH_HEADER}",
         ],
         "env": {"LITELLM_AUTH_HEADER": f"Bearer {master_key}"},

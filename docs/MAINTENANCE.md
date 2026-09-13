@@ -35,7 +35,7 @@ switch Code mode's primary model:
 Then `docker compose restart litellm`. Test it directly before trusting it:
 
 ```bash
-curl http://localhost:4000/v1/chat/completions \
+curl http://127.0.0.1:4000/v1/chat/completions \
   -H "Authorization: Bearer <your LITELLM_MASTER_KEY>" \
   -H "Content-Type: application/json" \
   -d '{"model":"kilo-code","messages":[{"role":"user","content":"say hi"}]}'
@@ -93,8 +93,8 @@ After adding, rebuild if you touched the `Dockerfile` too
 (`docker compose build litellm`), then restart, then check:
 
 ```bash
-curl http://localhost:4000/v1/mcp/server/health -H "Authorization: Bearer <master key>"
-curl http://localhost:4000/v1/mcp/server -H "Authorization: Bearer <master key>"
+curl http://127.0.0.1:4000/v1/mcp/server/health -H "Authorization: Bearer <master key>"
+curl http://127.0.0.1:4000/v1/mcp/server -H "Authorization: Bearer <master key>"
 ```
 
 ## Adding a host-companion MCP server (Blender, Godot, Unity, etc.)
@@ -179,18 +179,30 @@ docker compose up -d --force-recreate litellm   # if it touched config.yaml/Dock
 ## Using the dashboard
 
 ```bash
-python dashboard/app.py     # -> http://localhost:8877
+pip install -r dashboard/requirements.txt   # first time only (adds ruamel.yaml)
+python dashboard/app.py     # -> http://127.0.0.1:8877
 ```
+Always open it as `http://127.0.0.1:8877`, not `http://localhost:8877` --
+see the `localhost`-vs-`127.0.0.1` note in STATUS.md's Session 4 section
+if that ever seems to matter again.
+
 Overview / Balances / MCP Servers / Logs are read-only. **API Keys**
 writes `.env`, restarts the container, and re-runs `editors/cline/install.py`
 + `editors/zed/install.py` — leave a field blank to keep its current value.
+**Preference** picks the model-selection mode (same 10 as
+`set_preference.py`) and, for anything but "custom", applies it for real
+in one click. **Custom routing** hand-assigns each mode's model (the
+"custom" preference's mechanism) and can add a whole new mode/model slot.
+**Models** is a searchable, live, price-annotated list of every model
+your keyed providers currently expose — click "Refresh from providers" to
+bypass its 5-minute cache.
 
 ## Setting up a 6th editor
 
 Follow the pattern in `editors/`: point its model provider at
-`http://localhost:4000/v1` + your master key, and its MCP client at either
-`http://localhost:4000/mcp` directly (if it has a native remote/HTTP MCP
-transport) or via `npx -y mcp-remote http://localhost:4000/mcp --allow-http
+`http://127.0.0.1:4000/v1` + your master key, and its MCP client at either
+`http://127.0.0.1:4000/mcp` directly (if it has a native remote/HTTP MCP
+transport) or via `npx -y mcp-remote http://127.0.0.1:4000/mcp --allow-http
 --header "Authorization:Bearer <master key>"` piped into a stdio MCP slot
 (if it doesn't). Check its *current* maintenance status first — 3 of the
 5 candidates researched for this project turned out to be

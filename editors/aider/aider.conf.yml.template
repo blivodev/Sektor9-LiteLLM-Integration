@@ -4,6 +4,6 @@
 # Aider is built on LiteLLM's own Python SDK internally, so pointing it at
 # OUR LiteLLM proxy is just "another LiteLLM-compatible endpoint" to it.
 
-openai-api-base: http://localhost:4000
+openai-api-base: http://127.0.0.1:4000
 openai-api-key: YOUR_LITELLM_MASTER_KEY
 model: openai/kilo-code

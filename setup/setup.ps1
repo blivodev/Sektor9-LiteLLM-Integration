@@ -111,12 +111,12 @@ Write-Step "Waiting for LiteLLM to become healthy"
 $healthy = $false
 for ($i = 0; $i -lt 40; $i++) {
     try {
-        $resp = Invoke-WebRequest -Uri "http://localhost:4000/health/liveliness" -UseBasicParsing -TimeoutSec 3
+        $resp = Invoke-WebRequest -Uri "http://127.0.0.1:4000/health/liveliness" -UseBasicParsing -TimeoutSec 3
         if ($resp.StatusCode -eq 200) { $healthy = $true; break }
     } catch {}
     Start-Sleep -Seconds 3
 }
-if ($healthy) { Write-Host "LiteLLM is up at http://localhost:4000" } else { Write-Host "Still not healthy after ~2 min - check 'docker compose logs litellm'." -ForegroundColor Yellow }
+if ($healthy) { Write-Host "LiteLLM is up at http://127.0.0.1:4000" } else { Write-Host "Still not healthy after ~2 min - check 'docker compose logs litellm'." -ForegroundColor Yellow }
 
 # ---------- 4. VS Code extension ----------
 Write-Step "Installing the provider-balance VS Code extension"
@@ -212,7 +212,7 @@ Write-Step "Workflow dashboard (optional)"
 Write-Host "One page for everything: container/MCP health, balances, API keys, logs."
 if ($pythonExe) {
     & $pythonExe -m pip install --quiet -r (Join-Path $root "dashboard\requirements.txt")
-    Write-Host "Start it any time with: python `"$(Join-Path $root 'dashboard\app.py')`"  ->  http://localhost:8877"
+    Write-Host "Start it any time with: python `"$(Join-Path $root 'dashboard\app.py')`"  ->  http://127.0.0.1:8877"
 }
 
 # ---------- 5. Manual steps ----------
@@ -222,7 +222,7 @@ Kilo Code's own provider config isn't reliably settable by dropping a file
 in - do this once through its UI:
   1. Install the Kilo Code extension in VS Code if you haven't.
   2. Settings -> Providers -> Custom provider -> Connect
-       Base URL : http://localhost:4000/v1
+       Base URL : http://127.0.0.1:4000/v1
        API key  : $masterKey
   3. Settings -> Models -> "Model per Mode" -> set Code/Ask/Debug/Plan/
      Orchestrator to their matching kilo-* model from the new provider.
@@ -260,6 +260,6 @@ only the ones you actually use:
 "@
 
 Write-Step "Done"
-Write-Host "LiteLLM:      http://localhost:4000"
-Write-Host "Admin UI:     http://localhost:4000 (log in with the master key above)"
+Write-Host "LiteLLM:      http://127.0.0.1:4000"
+Write-Host "Admin UI:     http://127.0.0.1:4000 (log in with the master key above)"
 Write-Host "Master key:   $masterKey"

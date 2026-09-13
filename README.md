@@ -21,7 +21,7 @@ desktop control) documented in `setup/README.md`.
 - **[`dashboard/app.py`](dashboard/app.py)** — one page for everything:
   container/MCP health, provider balances, a unified log viewer, and an
   API-keys page that writes `.env` and re-propagates to every configured
-  editor automatically. `python dashboard/app.py` → http://localhost:8877.
+  editor automatically. `python dashboard/app.py` → http://127.0.0.1:8877.
   Live-tested end to end, including two real bugs found and fixed
   (Windows console encoding crashing the log viewer; see `docs/STATUS.md`).
 - **[`editors/`](editors/)** — 5 editors/agents beyond Kilo Code+VS Code,
@@ -163,7 +163,7 @@ Why these specifically:
   affects everything downstream.
 
 Confidence note: pricing and model slugs for OpenRouter/DeepInfra were
-verified live against `http://localhost:4000` during setup (10 of the 15
+verified live against `http://127.0.0.1:4000` during setup (10 of the 15
 configured models were test-called successfully). The 5 Fireworks-backed
 entries are configured correctly per Fireworks' docs but untested — verify
 once you've added your key (see below).
@@ -171,7 +171,7 @@ once you've added your key (see below).
 ## Verifying it works
 
 ```bash
-curl http://localhost:4000/health/liveliness
+curl http://127.0.0.1:4000/health/liveliness
 ```
 
 Call any mode directly (swap `kilo-code` for `kilo-ask` / `kilo-debug` /
@@ -179,7 +179,7 @@ Call any mode directly (swap `kilo-code` for `kilo-ask` / `kilo-debug` /
 names from `config.yaml` to test a specific fallback leg):
 
 ```bash
-curl http://localhost:4000/v1/chat/completions \
+curl http://127.0.0.1:4000/v1/chat/completions \
   -H "Authorization: Bearer $(grep LITELLM_MASTER_KEY .env | cut -d= -f2)" \
   -H "Content-Type: application/json" \
   -d '{"model":"kilo-code","messages":[{"role":"user","content":"say hi"}]}'
@@ -193,7 +193,7 @@ version — configure it once through the UI instead (this is what actually
 worked):
 
 1. Gear icon → **Providers** → **Custom provider** → **+ Connect**
-   - Base URL: `http://localhost:4000/v1`
+   - Base URL: `http://127.0.0.1:4000/v1`
    - API key: your `LITELLM_MASTER_KEY` from `.env`
    - It should auto-discover all the `kilo-*` models — select at least the
      5 primaries.

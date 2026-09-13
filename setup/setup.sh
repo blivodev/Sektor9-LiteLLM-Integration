@@ -110,14 +110,14 @@ docker compose -f "$ROOT/docker-compose.yaml" --project-directory "$ROOT" up -d
 step "Waiting for LiteLLM to become healthy"
 healthy=false
 for i in $(seq 1 40); do
-  if curl -s -o /dev/null -w "%{http_code}" http://localhost:4000/health/liveliness | grep -q 200; then
+  if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:4000/health/liveliness | grep -q 200; then
     healthy=true
     break
   fi
   sleep 3
 done
 if [ "$healthy" = true ]; then
-  echo "LiteLLM is up at http://localhost:4000"
+  echo "LiteLLM is up at http://127.0.0.1:4000"
 else
   echo "Still not healthy after ~2 min — check 'docker compose logs litellm'."
 fi
@@ -214,7 +214,7 @@ step "Workflow dashboard (optional)"
 echo "One page for everything: container/MCP health, balances, API keys, logs."
 if [ -n "$PYTHON" ]; then
   "$PYTHON" -m pip install --quiet -r "$ROOT/dashboard/requirements.txt"
-  echo "Start it any time with: $PYTHON \"$ROOT/dashboard/app.py\"  ->  http://localhost:8877"
+  echo "Start it any time with: $PYTHON \"$ROOT/dashboard/app.py\"  ->  http://127.0.0.1:8877"
 fi
 
 # ---------- 5. Manual steps ----------
@@ -224,7 +224,7 @@ Kilo Code's own provider config isn't reliably settable by dropping a file
 in — do this once through its UI:
   1. Install the Kilo Code extension in VS Code if you haven't.
   2. Settings -> Providers -> Custom provider -> Connect
-       Base URL : http://localhost:4000/v1
+       Base URL : http://127.0.0.1:4000/v1
        API key  : $MASTER_KEY
   3. Settings -> Models -> "Model per Mode" -> set Code/Ask/Debug/Plan/
      Orchestrator to their matching kilo-* model from the new provider.
@@ -256,6 +256,6 @@ only the ones you actually use:
 EOF
 
 step "Done"
-echo "LiteLLM:      http://localhost:4000"
-echo "Admin UI:     http://localhost:4000 (log in with the master key below)"
+echo "LiteLLM:      http://127.0.0.1:4000"
+echo "Admin UI:     http://127.0.0.1:4000 (log in with the master key below)"
 echo "Master key:   $MASTER_KEY"

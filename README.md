@@ -6,6 +6,10 @@ own model, and every model has a 2-deep, cross-provider fallback chain so a
 single provider's outage, rate limit, or exhausted credit doesn't stop you
 mid-task — LiteLLM just retries the next provider in line.
 
+**New here, or just want the full picture?** See [`docs/`](docs/) —
+a plain-language user guide, the architecture in detail, every bug found
+and fixed along the way, and how-to recipes for changing things yourself.
+
 All 5 provider keys (OpenRouter, DeepInfra, Fireworks, Anthropic, Gemini)
 are filled in and tested working. Still open: real credentials for the
 `meshy_3d`/`elevenlabs`/`suno_music` MCP servers (optional — see MCP gateway

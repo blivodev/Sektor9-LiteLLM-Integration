@@ -204,6 +204,8 @@ if ($pythonExe) {
     if ($doCline -eq "y") { & $pythonExe (Join-Path $root "editors\cline\install.py") }
     $doZed = Read-Host "Wire up Zed now (if installed)? (y/N)"
     if ($doZed -eq "y") { & $pythonExe (Join-Path $root "editors\zed\install.py") }
+    $doCopilot = Read-Host "Wire up GitHub Copilot Chat now (needs an active Copilot subscription)? (y/N)"
+    if ($doCopilot -eq "y") { & $pythonExe (Join-Path $root "editors\copilot\install.py") }
 }
 Write-Host "Aider and OpenHands: see editors\aider\README.md and editors\openhands\README.md."
 

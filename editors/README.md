@@ -1,4 +1,4 @@
-# 5 supported editors/agents
+# 5 supported editors/agents (+1 subscription-gated bonus)
 
 All 5 point at the same LiteLLM proxy and the same 16-server MCP gateway
 — pick whichever fits how you like to work. Every candidate was checked
@@ -16,6 +16,18 @@ reason).
 | [Zed](zed/) | Standalone editor (Rust) | `mcp-remote` bridge | ✅ Live-tested — config load confirmed, one real bug found & fixed |
 | [Aider](aider/) | Terminal tool | **not supported** | ✅ Live-tested LLM connectivity; MCP confirmed absent (not assumed) |
 | [OpenHands](openhands/) | Autonomous agent platform | native SHTTP | ⚠️ Researched, not personally installed/tested — heaviest install of the 5 |
+
+Plus **[GitHub Copilot Chat](copilot/)** — not a 6th free option (needs
+an active, signed-in Copilot subscription just to unlock the extension
+surface), so it's kept out of the table above, but documented and
+scripted the same way for whoever already pays for Copilot and wants it
+to reach LiteLLM's models/fallbacks too, via the open-source
+`vivswan.litellm-vscode-chat` bridge extension plus VS Code's own native
+MCP client (no `mcp-remote` bridge needed there, unlike Cline/Zed). Its
+`install.py` merge logic was unit-tested against scratch copies this
+session (preserves unrelated settings, idempotent re-runs, never writes
+the master key into the workspace-tracked `.vscode/mcp.json`) — not
+installed end-to-end, since that needs a real Copilot subscription.
 
 ## Why these 5
 

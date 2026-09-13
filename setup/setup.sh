@@ -206,6 +206,8 @@ if [ -n "$PYTHON" ]; then
   [ "$do_cline" = "y" ] && "$PYTHON" "$ROOT/editors/cline/install.py"
   read -r -p "Wire up Zed now (if installed)? (y/N): " do_zed
   [ "$do_zed" = "y" ] && "$PYTHON" "$ROOT/editors/zed/install.py"
+  read -r -p "Wire up GitHub Copilot Chat now (needs an active Copilot subscription)? (y/N): " do_copilot
+  [ "$do_copilot" = "y" ] && "$PYTHON" "$ROOT/editors/copilot/install.py"
 fi
 echo "Aider and OpenHands: see editors/aider/README.md and editors/openhands/README.md."
 

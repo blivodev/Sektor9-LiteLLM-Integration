@@ -117,11 +117,13 @@ flowchart LR
     E --> F[git commit + optional<br/>container restart]
 ```
 
-## The 5 editors/agents
+## The 5 editors/agents (+1 subscription-gated bonus)
 
 `editors/` holds a per-tool folder (Cline, Zed, Aider, OpenHands, plus a
 pointer for Kilo Code) each pointed at the same LiteLLM proxy + MCP
-gateway. Two connection patterns recur:
+gateway, plus a 6th (`copilot/`) kept out of the main comparison since it
+needs an active GitHub Copilot subscription just to function. Two
+connection patterns recur:
 
 ```mermaid
 flowchart LR
@@ -130,13 +132,25 @@ flowchart LR
         Bridge -- "HTTP + Authorization header" --> Gateway[LiteLLM MCP gateway]
     end
     subgraph Pattern B: native remote MCP
-        Editor2[OpenHands] -- "HTTP (SHTTP) + api_key" --> Gateway
+        Editor2[OpenHands / Copilot Chat] -- "HTTP + api_key/header" --> Gateway
     end
 ```
 
 Where a tool's *model provider* settings aren't in a plain file (Cline,
 Kilo Code), that's a one-time manual UI step — deliberately not solved by
 hacking a proprietary internal state file.
+
+Copilot Chat is the odd one out in two ways: its model routing goes
+through a third-party open-source bridge extension
+(`vivswan.litellm-vscode-chat`) rather than a setting the editor itself
+exposes, and its MCP connection uses VS Code's *own* native MCP client
+(workspace `.vscode/mcp.json`, Pattern B) rather than an editor-specific
+config file — so unlike Cline/Zed it needs no `mcp-remote` bridge at all,
+despite being the same VS-Code-extension shape as Cline. See
+`editors/copilot/README.md` for why its master key is deliberately kept
+out of that workspace file (a VS Code `inputs` prompt instead) when every
+other editor's installer here just writes it straight into a user-profile
+settings file.
 
 ## Local Ollama (optional)
 
@@ -224,6 +238,7 @@ custom-mode UI to that name is still a separate, per-editor step.
 │   └── app.py               # Workflow dashboard (Flask, port 8877)
 ├── editors/
 │   ├── cline/ zed/ aider/ openhands/ kilo-code/   # Per-editor setup + config templates
+│   ├── copilot/    # Bonus 6th, subscription-gated -- see its own README
 │   └── README.md
 ├── scripts/
 │   ├── refresh_models.py    # Model auto-refresh

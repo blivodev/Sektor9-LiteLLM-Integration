@@ -61,6 +61,25 @@
   editor/extension; descoped at the user's call in favor of the one
   dashboard covering all of them, given it's already reachable from
   any editor via a browser link.
+- **Added GitHub Copilot Chat as a bonus 6th `editors/` entry**
+  (`editors/copilot/`), after verifying the real facts first rather than
+  assuming: Copilot itself is a paid service, not open source, but its
+  VS Code Chat extension supports custom OpenAI-compatible model
+  providers, and there's a genuine open-source bridge extension
+  (`vivswan.litellm-vscode-chat`) built for exactly this — confirmed via
+  a direct fetch of its real docs (exact `settings.json` keys), not
+  guessed. Its MCP connection uses VS Code's own native MCP client
+  (`.vscode/mcp.json`, `"type": "http"`) rather than an `mcp-remote`
+  bridge, confirmed against VS Code's own MCP configuration reference
+  docs. `install.py`'s merge logic (chat-provider settings + workspace
+  MCP config) was unit-tested against scratch copies: preserves unrelated
+  settings and other server entries, idempotent on re-run, and never
+  writes the master key into the workspace-tracked `mcp.json` (uses VS
+  Code's `inputs` prompt instead, since that file could end up
+  committed) — not installed end-to-end, since that needs a real
+  signed-in Copilot subscription this session doesn't have. Kept out of
+  the main 5-editor comparison table since it needs that unrelated paid
+  subscription just to function, unlike the other 5.
 
 ## Session 3 additions
 

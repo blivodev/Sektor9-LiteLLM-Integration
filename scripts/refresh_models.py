@@ -56,8 +56,22 @@ ROOT = Path(__file__).resolve().parent.parent
 CONFIG_PATH = ROOT / "config.yaml"
 ENV_PATH = ROOT / ".env"
 CHANGELOG_PATH = ROOT / "MODEL_REFRESH_LOG.md"
+PREF_PATH = ROOT / ".model_preferences.json"
 
 TIMEOUT = 20
+
+
+def load_preference() -> str:
+    """See scripts/set_preference.py. Defaults to 'auto' (cheapest-among-
+    capable) if never set."""
+    if PREF_PATH.exists():
+        try:
+            import json as _json
+
+            return _json.loads(PREF_PATH.read_text(encoding="utf-8")).get("mode", "auto")
+        except Exception:
+            pass
+    return "auto"
 
 
 # ───────────────────────── .env loading (no external dep needed) ─────────
@@ -376,15 +390,26 @@ LIVE_TESTERS = {
 
 # ───────────────────────── candidate selection ─────────────────────────────
 
-def find_upgrade(current_model_id: str, catalog: list[dict], current_meta: dict | None) -> dict | None:
+def find_upgrade(current_model_id: str, catalog: list[dict], current_meta: dict | None, mode: str = "auto") -> dict | None:
     """
-    Returns the CHEAPEST same-family candidate that's at least as new a
-    version and at least as large a context window as the current model -
-    NOT the newest one that happens to be no pricier. "Latest" only breaks
-    ties between equally-priced candidates; price is what actually decides.
-    This is the whole point: you don't want the newest checkpoint if a
-    cheaper one in the same family is equally capable for the job.
+    mode="auto"/"cheapest"/"cheapest_from_best" (default): returns the
+    CHEAPEST same-family candidate that's at least as new a version and at
+    least as large a context window as the current model - NOT the newest
+    one that happens to be no pricier. Only recommended if it doesn't cost
+    more than what's running now.
+
+    mode="most_accurate"/"performance": returns the NEWEST version
+    available in the family (price only breaks ties between equally-new
+    candidates), and recommends it even if pricier - accuracy/capability
+    is what's being optimized for here, cost is secondary.
+
+    mode="custom": always returns None - see set_preference.py; the
+    caller (main()) treats this mode as "report only, never auto-apply"
+    regardless of --dry-run.
     """
+    if mode == "custom":
+        return None
+
     fam = family_key(current_model_id)
     cur_ver = version_tuple(current_model_id)
     cur_price_out = current_meta.get("price_out") if current_meta else None
@@ -405,18 +430,24 @@ def find_upgrade(current_model_id: str, catalog: list[dict], current_meta: dict 
     if not candidates:
         return None
 
+    prioritize_newest = mode in ("most_accurate", "performance")
+
     def sort_key(m):
         price_known = m["price_out"] is not None
         price = m["price_out"] if price_known else float("inf")
-        ver = version_tuple(m["id"])
-        return (not price_known, price, tuple(-v for v in ver))  # cheapest first, newest breaks ties
+        ver = tuple(-v for v in version_tuple(m["id"]))
+        return (ver, not price_known, price) if prioritize_newest else (not price_known, price, ver)
 
     candidates.sort(key=sort_key)
     best = candidates[0]
 
-    # Only actually recommend it if it's cheaper-or-equal to what's running
-    # now (when price is known for both) - otherwise the cheapest qualifying
-    # candidate still costs more than staying put, so there's no upgrade.
+    if prioritize_newest:
+        return best  # capability over cost - take the newest regardless of price
+
+    # Cost-driven modes: only recommend if cheaper-or-equal to what's
+    # running now (when price is known for both) - otherwise the cheapest
+    # qualifying candidate still costs more than staying put, so there's
+    # no upgrade to make.
     if cur_price_out is not None and best["price_out"] is not None:
         if best["price_out"] > cur_price_out * 1.05:  # tiny rounding slack
             return None
@@ -489,6 +520,12 @@ def main():
     ap.add_argument("--restart", action="store_true", help="Recreate the litellm container after applying changes.")
     args = ap.parse_args()
 
+    pref_mode = load_preference()
+    dry_run = args.dry_run or pref_mode == "custom"
+    if pref_mode == "custom" and not args.dry_run:
+        print("Preference is 'custom' (see .model_preferences.json / scripts/set_preference.py) -- reporting only, never auto-applying.")
+    print(f"Selection preference: {pref_mode}")
+
     cfg = load_config()
 
     print("Fetching LiteLLM's price/context map (primary pricing source)...")
@@ -520,7 +557,7 @@ def main():
             continue
 
         current_meta = next((m for m in catalog if base_id(m["id"]) == base_id(rest)), None)
-        candidate = find_upgrade(rest, catalog, current_meta)
+        candidate = find_upgrade(rest, catalog, current_meta, mode=pref_mode)
         if not candidate:
             continue
 
@@ -531,7 +568,7 @@ def main():
         )
         summary = f"{model_name}: {rest} -> {candidate['id']} ({provider}, {price_note})"
 
-        if args.dry_run:
+        if dry_run:
             log_lines.append(f"[dry-run] would consider: {summary}")
             print(f"[dry-run] {summary}")
             continue

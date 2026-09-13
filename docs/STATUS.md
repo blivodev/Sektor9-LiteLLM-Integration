@@ -1,6 +1,6 @@
 # Status, bugs found & fixed, potential upgrades
 
-## Current status (2026-09-13)
+## Current status (2026-09-13, session 2)
 
 | Area | Status |
 |---|---|
@@ -8,11 +8,57 @@
 | 5 Kilo Code modes | ✅ All wired, all 17 model entries live-tested |
 | MCP gateway | ✅ 13/16 servers healthy; 3 correctly inert pending API keys |
 | Kilo Code VS Code integration | ✅ Working via global config (see "Bugs found" #10) |
-| `litellm-provider-balance` extension | ✅ Installed as a real `.vsix`, status bar live |
-| Model auto-refresh | ✅ Built, live-tested (`--dry-run`), not yet run for real |
-| Cross-platform setup script | ✅ Written, syntax-verified, not yet run end-to-end on a fresh machine |
+| `litellm-provider-balance` extension | ✅ v0.0.2 — DeepInfra bug fixed, low-balance notifications added |
+| Model auto-refresh | ✅ Preference-aware (auto/cheapest/most_accurate/custom), live-tested each mode |
+| Local Ollama integration | ✅ Built, live-tested detection on this machine (found a real gap: AMD GPU missed by NVIDIA-only check, fixed) |
+| 5 editors/agents beyond Kilo Code | ✅ Cline/Zed/Aider live-tested end-to-end; OpenHands researched only; 3 candidates rejected (see below) |
+| Workflow dashboard | ✅ Built, live-tested all 5 routes including the real POST/apply path |
+| Cross-platform setup script | ✅ Updated for all of the above, syntax-verified |
 | Git repo | ✅ Pushed to [github.com/YOUR_USERNAME/litellm-setup](https://github.com/YOUR_USERNAME/litellm-setup) |
 | Host-companion apps (Unity/Godot/Nuclear/Windows-control) | ⏳ Documented, not yet actually set up |
+
+## Session 2 additions (this round)
+
+- **Fixed a real DeepInfra bug**: the balance extension read `stripe_balance`/
+  `limit`, which are a static auto-recharge ceiling setting that never
+  changes — not a live balance. `recent` (usage in the current billing
+  period) is what actually tracks spend; now computes `limit - recent`.
+  Confirmed live: went from a frozen `$20.00` to a real, moving `$10.30`.
+- **Low-balance notifications** added to the extension (6h cooldown per
+  provider, clears once back above threshold).
+- **Local Ollama integration** (`scripts/setup_ollama.py`): hardware-aware,
+  opt-in, registers a zero-cost last-resort fallback for Code/Ask only.
+  Caught two real bugs live: Windows' `wmic` is gone on recent builds (used
+  `Get-CimInstance` instead), and NVIDIA-only GPU detection completely
+  missed this machine's real AMD Radeon RX 9060 XT (added AMD detection,
+  sorted by VRAM to avoid picking the integrated GPU over the dedicated one).
+- **5 editors researched, 3 rejected with real evidence**: Void
+  (development paused, repo archived), Continue.dev (acquired by Cursor
+  June 2026, no longer maintained), Roo Code (shut down May 2026). Final
+  5 — Kilo Code, Cline, Zed, Aider, OpenHands — see `editors/README.md`.
+  Cline and Zed: live-tested MCP gateway connection via the `mcp-remote`
+  bridge (confirmed "Connected to remote server"). Zed: caught a real bug
+  where its schema requires `capabilities.images` on every model or it
+  silently fails to load the *entire* settings file. Aider: live-tested
+  LLM connectivity (real "pong" + token counts); confirmed (not assumed)
+  it lacks MCP support after the docs page 404'd and `--help` showed no
+  MCP flags — a web search claimed otherwise and was wrong.
+- **Workflow dashboard** (`dashboard/app.py`, Flask, port 8877): status
+  overview, balances, MCP health, log viewer, and an API-keys page that
+  writes `.env` and re-runs the Cline/Zed install scripts automatically.
+  Caught two real bugs live: a Windows console encoding crash in the log
+  viewer (docker log output isn't valid cp1252; forced UTF-8 with
+  replacement), and a `None + str` TypeError that followed from it.
+- **Preference-aware model selection**: `scripts/set_preference.py` +
+  `refresh_models.py` now support `auto`/`cheapest`/`most_accurate`/
+  `performance`/`cheapest_from_best`/`custom`. Verified live: `most_accurate`
+  genuinely picks a different (newer, not-cheapest) model than `auto` did
+  for the same candidate set; `custom` verified to make zero changes.
+- **Security review caught a real gap**: `editors/cline/install.py` and
+  `editors/zed/install.py` wrote files containing the master key without
+  restrictive permissions. Fixed with `os.chmod(path, 0o600)` (meaningful
+  on POSIX; a no-op on Windows, where the per-user profile directory ACL
+  already restricts access) — applied to the dashboard's `.env` write too.
 
 ## Bugs found and fixed (in the order discovered — useful if something similar recurs)
 

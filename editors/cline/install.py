@@ -69,6 +69,10 @@ def main():
     }
 
     path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    try:
+        os.chmod(path, 0o600)  # this file now contains your master key -- owner-only where the OS honors it
+    except OSError:
+        pass
     print(f"Merged litellm-gateway into {path}")
     print("Existing MCP servers you already had configured were left untouched.")
     print("\nOne manual step left - see README.md for Cline's provider setup (Settings UI).")

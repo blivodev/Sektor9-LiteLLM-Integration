@@ -176,6 +176,42 @@ git revert <commit-id>
 docker compose up -d --force-recreate litellm   # if it touched config.yaml/Dockerfile
 ```
 
+## Using the dashboard
+
+```bash
+python dashboard/app.py     # -> http://localhost:8877
+```
+Overview / Balances / MCP Servers / Logs are read-only. **API Keys**
+writes `.env`, restarts the container, and re-runs `editors/cline/install.py`
++ `editors/zed/install.py` — leave a field blank to keep its current value.
+
+## Setting up a 6th editor
+
+Follow the pattern in `editors/`: point its model provider at
+`http://localhost:4000/v1` + your master key, and its MCP client at either
+`http://localhost:4000/mcp` directly (if it has a native remote/HTTP MCP
+transport) or via `npx -y mcp-remote http://localhost:4000/mcp --allow-http
+--header "Authorization:Bearer <master key>"` piped into a stdio MCP slot
+(if it doesn't). Check its *current* maintenance status first — 3 of the
+5 candidates researched for this project turned out to be
+deprecated/unmaintained despite looking active at a glance.
+
+## Adjusting model-selection preference
+
+```bash
+python scripts/set_preference.py
+```
+Changes whether `refresh_models.py` optimizes for cost or capability —
+see `docs/ARCHITECTURE.md`. Stored in `.model_preferences.json` (gitignored).
+
+## Setting up local Ollama
+
+```bash
+python scripts/setup_ollama.py --check    # see the hardware read, change nothing
+python scripts/setup_ollama.py            # full setup, asks before doing anything
+python scripts/setup_ollama.py --remove   # undo it
+```
+
 ## Pushing your own changes
 
 ```bash

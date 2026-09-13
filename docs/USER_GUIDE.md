@@ -41,6 +41,14 @@ conflict with anything else installed on your PC.
 | **MCP servers** | Individual "tools" (talk to a database, control a browser, edit audio, etc.) that Kilo Code (or anything else connected) can use through LiteLLM. |
 | **The status bar extension** | A little indicator at the bottom-right of VS Code showing how much credit is left on each AI operator. |
 
+## The easy way: the dashboard
+
+Run `python dashboard/app.py` and open http://localhost:8877 — one simple
+page showing whether everything's running, how much credit you have left
+per provider, which tools are healthy, and a page to update your API keys
+that automatically applies the change everywhere it's needed. Skip
+straight there if you don't want to check things manually below.
+
 ## How do I know it's working?
 
 1. Open a terminal (PowerShell) and run:

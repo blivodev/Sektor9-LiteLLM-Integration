@@ -190,6 +190,33 @@ else
   echo "Python not found on PATH — skipping. Run scripts/setup_ollama.py later once it's installed."
 fi
 
+# ---------- 4e. Model selection preference ----------
+step "Model selection preference"
+echo "How should the model auto-refresher choose between candidates going forward?"
+if [ -n "$PYTHON" ]; then
+  "$PYTHON" "$ROOT/scripts/set_preference.py"
+fi
+
+# ---------- 4f. Editor integrations ----------
+step "Editor/agent integrations (optional)"
+echo "5 editors/agents can point at this same LiteLLM + MCP setup -- see editors/README.md."
+echo "Kilo Code is already fully configured. For the others:"
+if [ -n "$PYTHON" ]; then
+  read -r -p "Wire up Cline now (VS Code extension, if installed)? (y/N): " do_cline
+  [ "$do_cline" = "y" ] && "$PYTHON" "$ROOT/editors/cline/install.py"
+  read -r -p "Wire up Zed now (if installed)? (y/N): " do_zed
+  [ "$do_zed" = "y" ] && "$PYTHON" "$ROOT/editors/zed/install.py"
+fi
+echo "Aider and OpenHands: see editors/aider/README.md and editors/openhands/README.md."
+
+# ---------- 4g. Dashboard ----------
+step "Workflow dashboard (optional)"
+echo "One page for everything: container/MCP health, balances, API keys, logs."
+if [ -n "$PYTHON" ]; then
+  "$PYTHON" -m pip install --quiet -r "$ROOT/dashboard/requirements.txt"
+  echo "Start it any time with: $PYTHON \"$ROOT/dashboard/app.py\"  ->  http://localhost:8877"
+fi
+
 # ---------- 5. Manual steps ----------
 step "Manual step required: Kilo Code provider wiring"
 cat <<EOF

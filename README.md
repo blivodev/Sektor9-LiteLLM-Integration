@@ -16,6 +16,26 @@ are filled in and tested working. Still open: real credentials for the
 section below), and the host-companion apps (Unity/Godot/Nuclear/Windows
 desktop control) documented in `setup/README.md`.
 
+## What's new: dashboard, 5 editors, local models, preferences
+
+- **[`dashboard/app.py`](dashboard/app.py)** — one page for everything:
+  container/MCP health, provider balances, a unified log viewer, and an
+  API-keys page that writes `.env` and re-propagates to every configured
+  editor automatically. `python dashboard/app.py` → http://localhost:8877.
+  Live-tested end to end, including two real bugs found and fixed
+  (Windows console encoding crashing the log viewer; see `docs/STATUS.md`).
+- **[`editors/`](editors/)** — 5 editors/agents beyond Kilo Code+VS Code,
+  all pointed at this same proxy+gateway: Cline, Zed, Aider, OpenHands.
+  3 other strong-looking candidates (Void, Continue.dev, Roo Code) were
+  checked and rejected as no longer maintained — see `editors/README.md`.
+- **[`scripts/setup_ollama.py`](scripts/setup_ollama.py)** — optional,
+  hardware-aware local model via Ollama, registered as a zero-cost
+  last-resort fallback for Code/Ask modes only if it's actually worth it
+  on your hardware.
+- **[`scripts/set_preference.py`](scripts/set_preference.py)** — tells
+  `refresh_models.py` whether to optimize for cheapest, most-accurate, or
+  a blend of both.
+
 ## Setting this up on another machine
 
 See [`setup/README.md`](setup/README.md) — one script (`setup/setup.ps1` on
@@ -200,13 +220,13 @@ should bypass). It only asks once per workspace.
 ## Provider balance status bar
 
 [`vscode-extension/litellm-provider-balance/`](vscode-extension/litellm-provider-balance/)
-is installed into your VS Code (copied to
-`%USERPROFILE%\.vscode\extensions\local.litellm-provider-balance-0.0.1\`) —
-run **Developer: Reload Window** once to activate it if you haven't already.
-It shows a status bar segment per provider, colored 🟢/🟡/🔴 by how much of
-its budget is left. OpenRouter and DeepInfra are fully automatic (real
-balance APIs on both sides); the rest need one-time manual setup via the
-status bar item's click menu:
+(v0.0.2, installed as a real `.vsix` via `code --install-extension`) shows
+a status bar segment per provider, colored 🟢/🟡/🔴 by how much of its
+budget is left, plus a low-balance warning popup (once per provider per
+6h, cleared once you're back above the threshold). OpenRouter and
+DeepInfra are fully automatic (real balance APIs on both sides — DeepInfra's
+"never updates" bug is fixed, see `docs/STATUS.md`); the rest need
+one-time manual setup via the status bar item's click menu:
 
 - **Fireworks**: click → "Configure Fireworks tracking" → account ID
   **`YOUR_USERNAME`** (already confirmed against their API), then enter whatever

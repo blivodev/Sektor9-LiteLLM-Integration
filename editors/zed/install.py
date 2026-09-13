@@ -80,6 +80,10 @@ def main():
     data["context_servers"]["litellm-gateway"]["env"]["LITELLM_AUTH_HEADER"] = f"Bearer {master_key}"
 
     path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    try:
+        os.chmod(path, 0o600)  # this file now contains your master key -- owner-only where the OS honors it
+    except OSError:
+        pass
     print(f"Merged LiteLLM provider + MCP gateway into {path}")
 
     set_persistent_env_var("LITELLM_API_KEY", master_key)

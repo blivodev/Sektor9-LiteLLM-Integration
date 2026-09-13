@@ -188,6 +188,33 @@ if ($pythonExe) {
     Write-Host "Python not found on PATH - skipping. Run scripts\setup_ollama.py later once it's installed." -ForegroundColor Yellow
 }
 
+# ---------- 4e. Model selection preference ----------
+Write-Step "Model selection preference"
+Write-Host "How should the model auto-refresher choose between candidates going forward?"
+if ($pythonExe) {
+    & $pythonExe (Join-Path $root "scripts\set_preference.py")
+}
+
+# ---------- 4f. Editor integrations ----------
+Write-Step "Editor/agent integrations (optional)"
+Write-Host "5 editors/agents can point at this same LiteLLM + MCP setup - see editors\README.md."
+Write-Host "Kilo Code is already fully configured. For the others:"
+if ($pythonExe) {
+    $doCline = Read-Host "Wire up Cline now (VS Code extension, if installed)? (y/N)"
+    if ($doCline -eq "y") { & $pythonExe (Join-Path $root "editors\cline\install.py") }
+    $doZed = Read-Host "Wire up Zed now (if installed)? (y/N)"
+    if ($doZed -eq "y") { & $pythonExe (Join-Path $root "editors\zed\install.py") }
+}
+Write-Host "Aider and OpenHands: see editors\aider\README.md and editors\openhands\README.md."
+
+# ---------- 4g. Dashboard ----------
+Write-Step "Workflow dashboard (optional)"
+Write-Host "One page for everything: container/MCP health, balances, API keys, logs."
+if ($pythonExe) {
+    & $pythonExe -m pip install --quiet -r (Join-Path $root "dashboard\requirements.txt")
+    Write-Host "Start it any time with: python `"$(Join-Path $root 'dashboard\app.py')`"  ->  http://localhost:8877"
+}
+
 # ---------- 5. Manual steps ----------
 Write-Step "Manual step required: Kilo Code provider wiring"
 Write-Host @"

@@ -117,6 +117,58 @@ flowchart LR
     E --> F[git commit + optional<br/>container restart]
 ```
 
+## The 5 editors/agents
+
+`editors/` holds a per-tool folder (Cline, Zed, Aider, OpenHands, plus a
+pointer for Kilo Code) each pointed at the same LiteLLM proxy + MCP
+gateway. Two connection patterns recur:
+
+```mermaid
+flowchart LR
+    subgraph Pattern A: no native remote MCP
+        Editor1[Cline / Zed] -- stdio --> Bridge["mcp-remote<br/>(npx)"]
+        Bridge -- "HTTP + Authorization header" --> Gateway[LiteLLM MCP gateway]
+    end
+    subgraph Pattern B: native remote MCP
+        Editor2[OpenHands] -- "HTTP (SHTTP) + api_key" --> Gateway
+    end
+```
+
+Where a tool's *model provider* settings aren't in a plain file (Cline,
+Kilo Code), that's a one-time manual UI step — deliberately not solved by
+hacking a proprietary internal state file.
+
+## Local Ollama (optional)
+
+`scripts/setup_ollama.py` detects your GPU/RAM, and if it's worth it,
+registers a local model as a same pattern as any other fallback leg — a
+plain `model_list` entry with `model: ollama_chat/<name>` and
+`api_base: http://host.docker.internal:11434` (Ollama runs on your host,
+not in the container; the container reaches it the same way it reaches
+Blender/Godot). It's appended only to Code/Ask's fallback chains, never a
+primary — a small local model is a safety net, not a replacement for the
+cloud models chosen for their coding capability.
+
+## Workflow dashboard
+
+`dashboard/app.py` is a small Flask app (not containerized — it needs to
+run `docker compose`/`git`-adjacent commands and edit local files, which
+is simplest as a host process) that reads the same LiteLLM APIs and
+`.env` file everything else here uses. Its API-keys page doesn't just
+write `.env` — it re-runs `editors/cline/install.py` and
+`editors/zed/install.py` afterward, so a key rotation propagates
+everywhere in one action instead of needing to remember every place a
+key is duplicated.
+
+## Model selection preference
+
+`scripts/set_preference.py` writes `.model_preferences.json` (gitignored
+— personal, not project config), which `refresh_models.py` reads to bias
+`find_upgrade()`'s sort order: cost-first (`auto`/`cheapest`/
+`cheapest_from_best`) vs. capability-first (`most_accurate`/
+`performance`, which takes the newest version regardless of price) vs.
+`custom` (never auto-apply, always report-only).
+
 ## Repository layout
 
 ```
@@ -126,8 +178,15 @@ flowchart LR
 ├── Dockerfile               # Extends LiteLLM's image with MCP runtimes
 ├── kilo.jsonc / kilo.json   # Kilo Code project config (see STATUS.md re: what actually works)
 ├── .env                     # All secrets (gitignored)
+├── dashboard/
+│   └── app.py               # Workflow dashboard (Flask, port 8877)
+├── editors/
+│   ├── cline/ zed/ aider/ openhands/ kilo-code/   # Per-editor setup + config templates
+│   └── README.md
 ├── scripts/
 │   ├── refresh_models.py    # Model auto-refresh
+│   ├── set_preference.py    # Model-selection preference wizard
+│   ├── setup_ollama.py      # Optional local-LLM integration
 │   ├── schedule_refresh.*   # Registers the weekly schedule
 │   └── requirements.txt
 ├── setup/

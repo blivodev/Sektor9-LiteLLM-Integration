@@ -73,6 +73,34 @@ Every fallback chain spans a **different provider per hop** on purpose: a
 DeepInfra outage doesn't take down Code mode, because the fallback runs on
 OpenRouter or Fireworks instead.
 
+### Kilo Code's other built-in agent behaviors
+
+Kilo Code ships more built-in agents than the 5 above -- confirmed
+directly from a real Settings screenshot rather than assumed: `architect`,
+`code-reviewer`, `code-simplifier`, `code-skeptic`, `data`, `docs-specialist`,
+`frontend-specialist`, plus `general` and `explore` (used for delegated
+sub-agent work). `~/.config/kilo/kilo.jsonc`'s top-level `agent` object
+supports arbitrary keys (confirmed against Kilo's own published config
+schema, which marks `agent` as `additionalProperties`-open), so each of
+these got a model binding rather than silently falling through to
+whatever the UI's last-selected profile happens to be:
+
+| Agent | Bound to | Why |
+|---|---|---|
+| `architect` | `kilo-plan` | Same job as Plan mode -- stress-testing designs |
+| `code-reviewer` | `kilo-debug` | Review benefits from the stronger reasoning checkpoint, same logic as Debug mode |
+| `code-simplifier` | `kilo-code` | Refactoring is still agentic coding work |
+| `code-skeptic` | `kilo-debug` | Critical analysis, same reasoning tier as review/debug |
+| `data` | `kilo-code` | Appending/executing notebook cells is agentic tool-use |
+| `docs-specialist` | `kilo-ask` | Prose writing doesn't need the pricier reasoning tier |
+| `frontend-specialist` | `kilo-code` | Frontend dev is still coding |
+
+All 7 reuse an *existing* `config.yaml` model_name rather than getting a
+fresh primary+fallback trio each -- keeps the surface manageable, and
+any of them can be given its own independent model any time via the
+dashboard's Custom Routing page (`/routing`), which already supports
+adding a brand-new mode/model slot for exactly this.
+
 ## The MCP gateway
 
 `mcp_servers` in `config.yaml` registers 16 servers behind one endpoint.
@@ -117,13 +145,13 @@ flowchart LR
     E --> F[git commit + optional<br/>container restart]
 ```
 
-## The 6 editors/agents (+1 subscription-gated bonus)
+## The 7 editors/agents (+1 subscription-gated bonus)
 
 `editors/` holds a per-tool folder (Cline, Zed, Aider, OpenHands, Tabby,
-plus a pointer for Kilo Code) each pointed at the same LiteLLM proxy +
-MCP gateway, plus a 7th (`copilot/`) kept out of the main comparison
-since it needs an active GitHub Copilot subscription just to function.
-Two connection patterns recur:
+Hermes, plus a pointer for Kilo Code) each pointed at the same LiteLLM
+proxy + MCP gateway, plus an 8th (`copilot/`) kept out of the main
+comparison since it needs an active GitHub Copilot subscription just to
+function. Two connection patterns recur:
 
 ```mermaid
 flowchart LR
@@ -166,6 +194,21 @@ FIM-capable base model, not the chat/instruct models this project
 otherwise uses (see `editors/tabby/README.md`). Unlike the Copilot bonus
 above, Tabby needs no subscription at all -- the genuinely open-source
 answer to "alternative to GitHub Copilot" the user asked for.
+
+**Hermes Agent** ([hermes-agent.nousresearch.com](https://hermes-agent.nousresearch.com/))
+is Pattern B (native HTTP for both model calls and MCP) and, like Tabby,
+free/open-source with no subscription. Its own documentation names
+LiteLLM as a supported provider by name -- `editors/hermes/config.yaml.template`
+sets `providers.litellm.api`/`key_env` and `model.provider: custom:litellm`
+per that documented recipe. Its `model.default` is `kilo-code`, not a
+Hermes-branded model: Nous Research's own Hermes-3/4 models show no
+tool-calling support on OpenRouter's live API, and are pricier than
+`kilo-code` even on DeepInfra where tool support is confirmed -- a
+coding agent that can't reliably call tools can't edit files or run
+commands, so this project's cheapest-capable-with-tools pick applies
+here too, not the app's own model branding (see `editors/hermes/README.md`
+for the full price/tool-support comparison, checked against live
+provider APIs before writing any of this).
 
 ## Local Ollama (optional)
 
@@ -252,8 +295,8 @@ custom-mode UI to that name is still a separate, per-editor step.
 ├── dashboard/
 │   └── app.py               # Workflow dashboard (Flask, port 8877)
 ├── editors/
-│   ├── cline/ zed/ aider/ openhands/ tabby/ kilo-code/   # Per-editor setup + config templates
-│   ├── copilot/    # Bonus 7th, subscription-gated -- see its own README
+│   ├── cline/ zed/ aider/ openhands/ tabby/ hermes/ kilo-code/   # Per-editor setup + config templates
+│   ├── copilot/    # Bonus 8th, subscription-gated -- see its own README
 │   └── README.md
 ├── scripts/
 │   ├── refresh_models.py    # Model auto-refresh

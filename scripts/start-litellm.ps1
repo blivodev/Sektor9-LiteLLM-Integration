@@ -23,7 +23,7 @@ function Test-DockerReady {
 $dockerReady = Test-DockerReady
 
 if (-not $dockerReady) {
-    Write-Log "Docker engine not responding — attempting to start Docker Desktop..."
+    Write-Log "Docker engine not responding -- attempting to start Docker Desktop..."
     $dockerDesktop = Join-Path $Env:ProgramFiles "Docker\Docker\Docker Desktop.exe"
     if (Test-Path $dockerDesktop) {
         Start-Process -FilePath $dockerDesktop
@@ -40,7 +40,7 @@ if (-not $dockerReady) {
 }
 
 if (-not $dockerReady) {
-    Write-Log "Docker did not become ready after ~2 minutes. Aborting — start Docker Desktop and re-run this task."
+    Write-Log "Docker did not become ready after ~2 minutes. Aborting -- start Docker Desktop and re-run this task."
     exit 1
 }
 
@@ -49,7 +49,7 @@ Write-Log "Docker engine is up."
 # 2. Bring the stack up (no-op if the containers are already running).
 docker compose up -d
 if ($LASTEXITCODE -ne 0) {
-    Write-Log "docker compose up failed — see output above."
+    Write-Log "docker compose up failed -- see output above."
     exit 1
 }
 
@@ -72,4 +72,40 @@ if ($healthy) {
     Write-Log "LiteLLM proxy is up at http://127.0.0.1:4000"
 } else {
     Write-Log "LiteLLM did not report healthy yet. Check with: docker compose logs litellm"
+}
+
+# 4. Dashboard: start it too if it isn't already running, so it's always up
+# alongside the containers instead of something you have to remember to
+# launch by hand. Detached (Start-Process, no -Wait) so it keeps running
+# after this task's own terminal closes.
+function Test-PortOpen($port) {
+    try {
+        $conn = Test-NetConnection -ComputerName "127.0.0.1" -Port $port -WarningAction SilentlyContinue -InformationLevel Quiet
+        return $conn
+    } catch {
+        return $false
+    }
+}
+
+if (Test-PortOpen 8877) {
+    Write-Log "Dashboard already running at http://127.0.0.1:8877"
+} else {
+    $pythonExe = (Get-Command python -ErrorAction SilentlyContinue).Source
+    if (-not $pythonExe) { $pythonExe = (Get-Command python3 -ErrorAction SilentlyContinue).Source }
+    if ($pythonExe) {
+        $dashboardScript = Join-Path $projectRoot "dashboard\app.py"
+        $logPath = Join-Path $projectRoot "dashboard\dashboard.log"
+        $errLogPath = Join-Path $projectRoot "dashboard\dashboard.err.log"
+        Start-Process -FilePath $pythonExe -ArgumentList "`"$dashboardScript`"" `
+            -WorkingDirectory $projectRoot -WindowStyle Hidden `
+            -RedirectStandardOutput $logPath -RedirectStandardError $errLogPath
+        Start-Sleep -Seconds 2
+        if (Test-PortOpen 8877) {
+            Write-Log "Dashboard started at http://127.0.0.1:8877 (log: dashboard/dashboard.log)"
+        } else {
+            Write-Log "Dashboard didn't come up yet -- check dashboard/dashboard.log, or missing deps: pip install -r dashboard/requirements.txt"
+        }
+    } else {
+        Write-Log "No python found on PATH -- can't auto-start the dashboard. Install Python, or run it yourself: python dashboard/app.py"
+    }
 }

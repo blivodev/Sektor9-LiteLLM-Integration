@@ -5,3 +5,5 @@ scripts/refresh_models.cron.log
 scripts/refresh_models.task.log
 .model_preferences.json
 editors/tabby/data/
+dashboard/dashboard.log
+dashboard/dashboard.err.log

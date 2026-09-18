@@ -1,0 +1,38 @@
+# REFERENCE ONLY -- not read by install.py directly. Hermes's real
+# config.yaml is a large (100KB+), heavily-commented file that ships with
+# its own install, and its own docs say to use `hermes config set
+# <key> <value>` rather than hand-edit it -- which is exactly what
+# install.py does. This file just shows the end result in one place: run
+# install.py, and your real ~/.hermes/config.yaml (or, on Windows,
+# %LOCALAPPDATA%\hermes\config.yaml -- confirmed live, the ~/.hermes/...
+# path in Hermes's own docs is Unix-only) ends up with these values set,
+# without anything else in that file being touched.
+#
+# The master key never gets written here or into config.yaml -- it goes
+# into Hermes's own .env (path found via `hermes config env-path`) as
+# LITELLM_API_KEY, resolved at runtime via key_env below.
+
+providers:
+  litellm:
+    api: "http://127.0.0.1:4000/v1"
+    key_env: LITELLM_API_KEY
+
+model:
+  # Deliberately kilo-code, NOT a Hermes-branded model: the Hermes models
+  # (Hermes-3/4) currently show no tool-calling support on OpenRouter, and
+  # are pricier than kilo-code even where DeepInfra does support tools
+  # (Hermes-3-405B: $1.00/1M vs kilo-code's ~$0.18/1M out) -- verified
+  # live against OpenRouter's and DeepInfra's real catalogs, not assumed.
+  # A coding agent without reliable tool calls can't edit files or run
+  # commands, so this project's existing cheapest-capable-with-tools pick
+  # is what Hermes Agent uses by default here too. See README.md for the
+  # full comparison and how to point this at a Hermes model anyway if you
+  # want to try it for non-agentic chat/exploration.
+  default: kilo-code
+  provider: custom:litellm
+
+mcp_servers:
+  litellm-gateway:
+    url: "http://127.0.0.1:4000/mcp"
+    headers:
+      Authorization: "Bearer ${LITELLM_API_KEY}"

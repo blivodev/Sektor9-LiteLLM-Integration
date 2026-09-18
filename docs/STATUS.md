@@ -1,6 +1,81 @@
 # Status, bugs found & fixed, potential upgrades
 
-## Session 4 additions (this round)
+## Session 5 additions (this round)
+
+- **Fixed a real, self-inflicted production incident**: `OPENROUTER_API_KEY`
+  in `.env` had been overwritten with the literal string `hacked` earlier
+  in Session 4, when a CSRF test command was accidentally sent to a stale,
+  unpatched dashboard process (before that session's CSRF fix had loaded)
+  instead of erroring. This silently broke every OpenRouter-routed
+  fallback (`kilo-code-fallback-1`, etc.) with `AuthenticationError:
+  Missing Authentication header` -- the actual cause of "Kilo Code keeps
+  halting, no visible error." Confirmed via the dashboard's own Balances
+  page showing `OpenRouter: error: 'data'`. Fixed once the user supplied
+  a fresh key; verified live: `kilo-code-fallback-1` now returns a real
+  completion (`"pong"`, `finish_reason: stop`) and the dashboard shows a
+  real balance again.
+- **Fixed a second real bug found while investigating**: `scripts/
+  start-litellm.ps1` (and this session's edits to it) had em-dash
+  characters, the exact known PowerShell-5.1-can't-reliably-read-UTF-8
+  issue already documented in this file's bug list (#13) -- caught via
+  the script failing to parse at all when checked with PowerShell's own
+  parser, not assumed. Replaced with plain ASCII throughout.
+- **Dashboard made durable**: `scripts/start-litellm.ps1` (already
+  auto-run on VS Code folder open via `.vscode/tasks.json`) now also
+  starts the dashboard if it isn't already running, detached, logging to
+  `dashboard/dashboard.log`/`.err.log` (gitignored). Idempotent -- a
+  second run correctly detects it's already up rather than double-starting
+  it. Verified live: killed the dashboard, ran the script, confirmed it
+  came back up and answered HTTP 200; ran again, confirmed it correctly
+  skipped starting a second instance.
+- **Kilo Code's other built-in agent behaviors wired up**: Kilo Code ships
+  more agents than the 5 originally accounted for (`architect`,
+  `code-reviewer`, `code-simplifier`, `code-skeptic`, `data`,
+  `docs-specialist`, `frontend-specialist`, plus `general`/`explore` for
+  sub-agent delegation) -- confirmed directly from a real Settings
+  screenshot, not assumed, after an earlier guess at their internal key
+  names turned out to need correction from the user. `~/.config/kilo/
+  kilo.jsonc`'s `agent` object accepts arbitrary keys (confirmed against
+  Kilo's own published config schema), so each of the 7 new ones got a
+  model binding reusing an existing `config.yaml` model_name (no new
+  model_list entries) rather than silently falling through to whatever
+  the UI's last-selected profile happens to be. See `docs/ARCHITECTURE.md`
+  for the full mapping and reasoning per agent.
+- **Added Hermes Agent as a fully live-tested 7th editor**
+  (`editors/hermes/`) -- researched at the user's request, and unlike
+  every other editor added this project, actually verified end-to-end
+  with a real running installation on this machine, not just config
+  review:
+  - Real chat round-trip: `hermes -z "reply with exactly the word pong"
+    --provider litellm -m kilo-code` -> `pong`.
+  - Real MCP gateway test: `hermes mcp test litellm-gateway` -> connected,
+    152 tools discovered across all 16 configured MCP servers.
+  - **A real mistake made and then caught within the same session**: the
+    first version of `install.py` merged directly into `~/.hermes/
+    config.yaml` via `ruamel.yaml` -- which turned out to be flatly wrong
+    on Windows, where Hermes actually reads `%LOCALAPPDATA%\hermes\
+    config.yaml` (`~/.hermes/` is Unix-only, and Hermes's own docs say so,
+    but only for the Unix path -- the Windows path was assumed rather
+    than checked, and assuming instead of checking is exactly the mistake
+    this project's own conventions exist to prevent). Caught via `hermes
+    doctor` reporting a *different* active config path than the one just
+    written to, not through guesswork. Rewritten to use Hermes's own
+    `hermes config set <key> <value>` CLI instead of hand-editing its
+    (100KB+, heavily-commented) real config file at all -- safer, and
+    what Hermes's own docs recommend.
+  - `model.default` deliberately set to `kilo-code`, not a Hermes-branded
+    model: live-checked against OpenRouter's real `/api/v1/models` and
+    LiteLLM's price map, every Hermes-3/4 variant on OpenRouter shows no
+    tool-calling support, and the one DeepInfra variant that does support
+    tools costs 5.5x more per token than `kilo-code`. A coding agent
+    without reliable tool calls can't edit files or run commands -- see
+    `editors/hermes/README.md` for the full comparison table.
+- Considered building dashboard-equivalent UI directly inside every
+  editor/extension a second time (user asked again, this session);
+  descoped again at the user's own call in favor of continuing to expand
+  the dashboard and the editor roster instead.
+
+## Session 4 additions
 
 - **Real root cause found for "Kilo Code hangs forever / can't reach
   LiteLLM or the dashboard": `localhost` resolves to `::1` (IPv6) first

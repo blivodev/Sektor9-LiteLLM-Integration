@@ -178,6 +178,11 @@ docker compose up -d --force-recreate litellm   # if it touched config.yaml/Dock
 
 ## Using the dashboard
 
+You shouldn't need to start this by hand anymore: `scripts/start-litellm.ps1`
+(already auto-run on VS Code folder open) starts it automatically if it
+isn't already running, alongside the containers. Only run it manually if
+you closed it or need to run it outside VS Code:
+
 ```bash
 pip install -r dashboard/requirements.txt   # first time only (adds ruamel.yaml)
 python dashboard/app.py     # -> http://127.0.0.1:8877
@@ -211,7 +216,24 @@ the Tabby extension for your IDE and point it at that URL. Read
 Copilot-level inline suggestions out of the box — chat has no such
 caveat.
 
-## Setting up another editor beyond these 7
+## Setting up Hermes Agent (free, open-source, live-verified)
+
+```bash
+python editors/hermes/install.py
+```
+Uses Hermes's own `hermes config set` CLI to point its default model at
+`kilo-code` and register the MCP gateway -- doesn't touch its config
+file directly. Verify any time with:
+```bash
+hermes doctor
+hermes mcp test litellm-gateway
+hermes -z "say pong" --provider litellm -m kilo-code
+```
+Read `editors/hermes/README.md` before switching its default model to a
+Hermes-branded one -- none of them currently support tool calling on
+OpenRouter, which breaks file edits/commands/MCP tools.
+
+## Setting up another editor beyond these 8
 
 Follow the pattern in `editors/`: point its model provider at
 `http://127.0.0.1:4000/v1` + your master key, and its MCP client at either

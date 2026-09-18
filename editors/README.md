@@ -1,6 +1,6 @@
-# 6 supported editors/agents (+1 subscription-gated bonus)
+# 7 supported editors/agents (+1 subscription-gated bonus)
 
-All 6 point at the same LiteLLM proxy and the same 16-server MCP gateway
+All 7 point at the same LiteLLM proxy and the same 16-server MCP gateway
 — pick whichever fits how you like to work. Every candidate was checked
 for real, current maintenance status before being included here (3 other
 strong-looking candidates — **Void**, **Continue.dev**, and **Roo
@@ -17,6 +17,7 @@ reason).
 | [Aider](aider/) | Terminal tool | **not supported** | ✅ Live-tested LLM connectivity; MCP confirmed absent (not assumed) |
 | [OpenHands](openhands/) | Autonomous agent platform | native SHTTP | ⚠️ Researched, not personally installed/tested — heaviest install of the 5 |
 | [Tabby](tabby/) | Self-hosted server + IDE extension | (Tabby has no MCP client of its own) | ⚠️ Config verified against real docs + `setup.py` actually run (valid output confirmed); the multi-GB server container itself not personally pulled/started |
+| [Hermes Agent](hermes/) | Desktop/terminal agent app | native HTTP | ✅ Fully live-tested: real chat round-trip (`hermes -z "..." --provider litellm -m kilo-code` → real reply) and MCP gateway (`hermes mcp test` → 152 tools discovered) both confirmed working on this machine |
 
 **Tabby** is the odd one structurally: it's not an editor or extension by
 itself, it's its own self-hosted server that a thin IDE extension then
@@ -25,6 +26,16 @@ more than the rest) — but it's genuinely free/open-source, no
 subscription of any kind, unlike the Copilot bonus below. Its own
 `README.md` has an important caveat about inline-completion quality with
 this project's current (chat/instruct, not FIM) models.
+
+**Hermes Agent** is genuinely free/open-source too, and its own docs
+name LiteLLM as a supported provider by name. Its config defaults to
+`kilo-code`, deliberately *not* a Hermes-branded model — Nous Research's
+own Hermes-3/4 models show no tool-calling support on OpenRouter and are
+pricier than `kilo-code` even on DeepInfra where tools do work (all
+verified live against the real provider APIs, see `hermes/README.md` for
+the full price/tool-support table). A coding agent that can't call tools
+can't edit files or run commands, so the model default reflects that,
+not the app's own branding.
 
 Plus **[GitHub Copilot Chat](copilot/)** — not a free option (needs an
 active, signed-in Copilot subscription just to unlock the extension

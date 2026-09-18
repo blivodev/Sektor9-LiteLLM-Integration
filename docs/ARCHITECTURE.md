@@ -9,7 +9,7 @@ flowchart TB
     subgraph Host["Your Windows machine"]
         VSCode["VS Code<br/>+ Kilo Code extension<br/>+ litellm-provider-balance extension"]
         Docker["Docker Desktop"]
-        HostApps["Host-only apps (optional)<br/>Blender / Godot / Unity / Nuclear /<br/>Windows-MCP desktop control"]
+        HostApps["Host-only apps (optional)<br/>Blender / Godot / Unity / Nuclear"]
         RefreshScript["scripts/refresh_models.py<br/>(runs on a schedule, host-side)"]
     end
 
@@ -112,11 +112,13 @@ Three categories:
 2. **Containerized but need your own API key** — Meshy (3D gen),
    ElevenLabs (voice), Suno via AceDataCloud (music) — sit inert until you
    add a key to `.env`.
-3. **Host-companion** — Blender, Godot, Unity, Nuclear, Windows desktop
-   control. These need their real application running on your machine;
-   the container either reaches out to it (`host.docker.internal`) or a
-   host-side process is registered as a remote MCP server. See
-   [MAINTENANCE.md](MAINTENANCE.md) for exact setup per app.
+3. **Host-companion** — Blender, Godot, Unity, Nuclear. These need their
+   real application running on your machine; the container either reaches
+   out to it (`host.docker.internal`) or a host-side process is registered
+   as a remote MCP server. See [MAINTENANCE.md](MAINTENANCE.md) for exact
+   setup per app. **Desktop control is deliberately NOT in this list** — it
+   is a local per-editor server instead (see "The power pack" below), so it
+   never listens on a port.
 
 ## The Docker image
 
@@ -145,13 +147,13 @@ flowchart LR
     E --> F[git commit + optional<br/>container restart]
 ```
 
-## The 7 editors/agents (+1 subscription-gated bonus)
+## The 10 editors/agents (+1 subscription-gated bonus)
 
 `editors/` holds a per-tool folder (Cline, Zed, Aider, OpenHands, Tabby,
-Hermes, plus a pointer for Kilo Code) each pointed at the same LiteLLM
-proxy + MCP gateway, plus an 8th (`copilot/`) kept out of the main
-comparison since it needs an active GitHub Copilot subscription just to
-function. Two connection patterns recur:
+Hermes, OpenCode, OpenWork, Goose, plus a pointer for Kilo Code) each
+pointed at the same LiteLLM proxy + MCP gateway, plus an 11th (`copilot/`)
+kept out of the main comparison since it needs an active GitHub Copilot
+subscription just to function. Two connection patterns recur:
 
 ```mermaid
 flowchart LR
@@ -209,6 +211,46 @@ commands, so this project's cheapest-capable-with-tools pick applies
 here too, not the app's own model branding (see `editors/hermes/README.md`
 for the full price/tool-support comparison, checked against live
 provider APIs before writing any of this).
+
+**OpenCode / OpenWork / Goose** (the newest three) share `editors/_common/
+common.py` (model discovery from the live proxy, env-var setting, the power
+pack definition) instead of each carrying its own copy:
+
+- **OpenCode** is the reference implementation: a `litellm` provider
+  (`@ai-sdk/openai-compatible`), a remote `litellm-gateway` MCP entry, both
+  authenticated through OpenCode's `{env:LITELLM_API_KEY}` substitution so
+  no key is written to the file, and agent bindings that mirror the Kilo Code
+  mapping above (`build`→kilo-code, `plan`→kilo-plan, `general`/`explore`→
+  kilo-ask). Its installer uses a string-aware JSONC parser and keeps the
+  old values in a header comment plus one backup.
+- **OpenWork** *embeds* OpenCode: it layers its own generated runtime config
+  and then each workspace's `opencode.jsonc`, so its installer
+  (`editors/openwork/install.py`) reuses OpenCode's merge logic but targets
+  the workspace files (auto-detected from OpenWork's server state) and does
+  not rebind agents.
+- **Goose** has a different config shape (custom-provider JSON + YAML
+  extensions). Its native HTTP MCP extension did not send an
+  `Authorization` header in testing, so it uses the same `mcp-remote` stdio
+  bridge as Cline/Zed (Pattern A above).
+
+### The power pack: local MCP servers, not gateway entries
+
+Bringing an editor closer to Claude Desktop/Code means desktop control and
+machine-wide file access — things a container can't see. Those are added as
+**local stdio MCP servers per editor** (`desktop-commander`, and
+`windows-mcp` on Windows), *not* registered in the gateway: the gateway
+would need to reach a host process over a port, and `host.docker.internal`
+is this machine's LAN IP, so that would expose desktop control beyond
+loopback. Remote/SSH control, the browser and the rest already flow through
+the gateway to every editor. See `editors/README.md` for the per-editor
+matrix and the security note.
+
+### Key rotation reaches every editor
+
+The dashboard's API Keys page re-runs each installer that embeds the master
+key (`cline`, `zed`, `hermes`, `opencode`, `openwork`, `goose`). The newer
+ones run with `--no-rebind`, so rotating a key never resets a model or agent
+choice you made in the editor since installing.
 
 ## Local Ollama (optional)
 
@@ -295,8 +337,9 @@ custom-mode UI to that name is still a separate, per-editor step.
 ├── dashboard/
 │   └── app.py               # Workflow dashboard (Flask, port 8877)
 ├── editors/
-│   ├── cline/ zed/ aider/ openhands/ tabby/ hermes/ kilo-code/   # Per-editor setup + config templates
-│   ├── copilot/    # Bonus 8th, subscription-gated -- see its own README
+│   ├── cline/ zed/ aider/ openhands/ tabby/ hermes/ opencode/ openwork/ goose/ kilo-code/   # Per-editor setup + config templates
+│   ├── _common/    # Shared helpers for the newest installers (model discovery, power pack)
+│   ├── copilot/    # Bonus, subscription-gated -- see its own README
 │   └── README.md
 ├── scripts/
 │   ├── refresh_models.py    # Model auto-refresh

@@ -13,10 +13,11 @@ and fixed along the way, and how-to recipes for changing things yourself.
 All 5 provider keys (OpenRouter, DeepInfra, Fireworks, Anthropic, Gemini)
 are filled in and tested working. Still open: real credentials for the
 `meshy_3d`/`elevenlabs`/`suno_music` MCP servers (optional — see MCP gateway
-section below), and the host-companion apps (Unity/Godot/Nuclear/Windows
-desktop control) documented in `setup/README.md`.
+section below), and the host-companion apps (Unity/Godot/Nuclear) documented in
+`setup/README.md`. (Desktop control is handled separately — see the power pack
+in `editors/README.md`.)
 
-## What's new: dashboard, 7 editors, local models, preferences
+## What's new: dashboard, 10 editors, local models, preferences
 
 - **[`dashboard/app.py`](dashboard/app.py)** — one page for everything:
   container/MCP health, provider balances, a unified log viewer, an
@@ -28,13 +29,15 @@ desktop control) documented in `setup/README.md`.
   already run on VS Code folder open) — http://127.0.0.1:8877 any time.
   Live-tested end to end, including bugs found and fixed along the way —
   see `docs/STATUS.md`.
-- **[`editors/`](editors/)** — 7 editors/agents beyond Kilo Code+VS Code,
+- **[`editors/`](editors/)** — 10 editors/agents beyond Kilo Code+VS Code,
   all pointed at this same proxy+gateway: Cline, Zed, Aider, OpenHands,
-  Tabby, Hermes Agent. 3 other strong-looking candidates (Void,
+  Tabby, Hermes Agent, OpenCode, OpenWork, Goose. OpenCode/OpenWork/Goose
+  also get a "power pack" (desktop control + whole-machine file access) that
+  brings them closer to Claude Desktop/Code. 3 other strong-looking candidates (Void,
   Continue.dev, Roo Code) were checked and rejected as no longer
   maintained — see
   `editors/README.md`. GitHub Copilot Chat is also there as a
-  subscription-gated bonus 8th, for anyone who already pays for Copilot.
+  subscription-gated bonus, for anyone who already pays for Copilot.
 - **[`scripts/setup_ollama.py`](scripts/setup_ollama.py)** — optional,
   hardware-aware local model via Ollama, registered as a zero-cost
   last-resort fallback for Code/Ask modes only if it's actually worth it
@@ -59,7 +62,7 @@ This LiteLLM instance also acts as a centralized MCP server gateway — see
 (databases, filesystem, browser automation, 3D/audio AI generation, SSH,
 and more); most are healthy and tested, a few are intentionally inert until
 you add their credentials to `.env`, and a couple (Blender, Godot, Unity,
-Nuclear, Windows desktop control) need their real application running on
+Nuclear) need their real application running on
 your machine rather than in the container — see `setup/README.md` for those.
 
 ## Model auto-refresh

@@ -44,10 +44,14 @@ chmod +x setup/setup.sh
 - **Kilo Code's provider wiring** — its config isn't reliably settable by
   dropping a file in (we learned this the hard way); it's a two-minute UI
   flow the script walks you through instead.
-- **Host-side companion MCP servers** (Blender, Godot, Unity, Nuclear,
-  Windows desktop control) — these need their real application running on
-  that machine, not something a container can substitute for. The script
-  prints exactly what to install/run for whichever ones you use.
+- **Host-side companion MCP servers** (Blender, Godot, Unity, Nuclear) —
+  these need their real application running on that machine, not something
+  a container can substitute for. The script prints exactly what to
+  install/run for whichever ones you use.
+- **Desktop control** is *not* a gateway companion any more: it's a local
+  per-editor "power pack" (`desktop-commander` + `windows-mcp`) installed by
+  the OpenCode/OpenWork/Goose installers, so it never listens on a network
+  port — see `editors/README.md`.
 
 ## Re-running it
 

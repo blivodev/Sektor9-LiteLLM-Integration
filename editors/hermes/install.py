@@ -17,6 +17,7 @@ Safe to re-run any time (e.g. after rotating the master key) -- every
 `config set` call here is idempotent (re-setting the same key to the
 same value is a no-op in effect).
 """
+import argparse
 import platform
 import shutil
 import subprocess
@@ -94,6 +95,11 @@ def merge_dotenv(env_path: Path, master_key: str):
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--no-rebind", action="store_true",
+                    help="Refresh the provider/MCP/key only; leave model.default/provider as you set them.")
+    args = ap.parse_args()
+
     env = load_env()
     master_key = env.get("LITELLM_MASTER_KEY")
     if not master_key:
@@ -117,6 +123,8 @@ def main():
         ("mcp_servers.litellm-gateway.url", "http://127.0.0.1:4000/mcp"),
         ("mcp_servers.litellm-gateway.headers.Authorization", f"Bearer {master_key}"),
     ]
+    if args.no_rebind:
+        settings = [s for s in settings if s[0] not in ("model.default", "model.provider")]
     for key, value in settings:
         r = run(hermes, "config", "set", key, value)
         if r.returncode != 0:
@@ -128,7 +136,8 @@ def main():
     # (e.g. if you'd already run `hermes model` and picked OpenRouter)
     # would otherwise shadow providers.litellm.api. Harmless to unset even
     # if it was never set.
-    run(hermes, "config", "unset", "model.base_url")
+    if not args.no_rebind:
+        run(hermes, "config", "unset", "model.base_url")
 
     env_path = config_env_path(hermes)
     merge_dotenv(env_path, master_key)

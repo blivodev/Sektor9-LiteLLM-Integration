@@ -197,13 +197,21 @@ if ($pythonExe) {
 
 # ---------- 4f. Editor integrations ----------
 Write-Step "Editor/agent integrations (optional)"
-Write-Host "5 editors/agents can point at this same LiteLLM + MCP setup - see editors\README.md."
+Write-Host "10 editors/agents can point at this same LiteLLM + MCP setup - see editors\README.md."
 Write-Host "Kilo Code is already fully configured. For the others:"
 if ($pythonExe) {
     $doCline = Read-Host "Wire up Cline now (VS Code extension, if installed)? (y/N)"
     if ($doCline -eq "y") { & $pythonExe (Join-Path $root "editors\cline\install.py") }
     $doZed = Read-Host "Wire up Zed now (if installed)? (y/N)"
     if ($doZed -eq "y") { & $pythonExe (Join-Path $root "editors\zed\install.py") }
+    $doHermes = Read-Host "Wire up Hermes Agent now (if installed)? (y/N)"
+    if ($doHermes -eq "y") { & $pythonExe (Join-Path $root "editors\hermes\install.py") }
+    $doOpenCode = Read-Host "Wire up OpenCode now, incl. desktop-control power pack (if installed)? (y/N)"
+    if ($doOpenCode -eq "y") { & $pythonExe (Join-Path $root "editors\opencode\install.py") }
+    $doOpenWork = Read-Host "Wire up OpenWork now, incl. power pack (if installed)? (y/N)"
+    if ($doOpenWork -eq "y") { & $pythonExe (Join-Path $root "editors\openwork\install.py") }
+    $doGoose = Read-Host "Wire up Goose now, incl. power pack (close 'goose configure' first; if installed)? (y/N)"
+    if ($doGoose -eq "y") { & $pythonExe (Join-Path $root "editors\goose\install.py") }
     $doCopilot = Read-Host "Wire up GitHub Copilot Chat now (needs an active Copilot subscription)? (y/N)"
     if ($doCopilot -eq "y") { & $pythonExe (Join-Path $root "editors\copilot\install.py") }
 }

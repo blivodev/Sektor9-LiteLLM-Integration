@@ -101,6 +101,23 @@ PC instead of the cloud at all (needs `python scripts/setup_ollama.py`
 run first). It just asks a numbered question and remembers your answer —
 re-run it whenever you change your mind, nothing is permanent.
 
+## Other apps that can use this setup
+
+Kilo Code isn't the only thing that can sit on top of the switchboard.
+`editors/` has ready-made setups for OpenCode, OpenWork, Goose, Hermes,
+Cline, Zed and more — each one is a single command (for example
+`python editors/goose/install.py`) that points that app at the same
+LiteLLM, so it gets the same cheap models, the same automatic backups and
+the same toolbox.
+
+Three of them (OpenCode, OpenWork, Goose) also get a "power pack": tools
+that let the AI browse files anywhere on your computer and even click and
+type in other windows, a bit like Claude Desktop. That's powerful, so treat
+it like handing someone your keyboard: don't point those apps at web pages or
+documents you don't trust, and re-run the installer with `--no-power` for any
+app you'd rather keep on a short leash. Details and the reasoning are in
+`editors/README.md`.
+
 ## What if something breaks?
 
 **"Kilo Code says it can't connect"**

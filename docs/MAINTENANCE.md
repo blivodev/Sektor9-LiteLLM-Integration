@@ -129,6 +129,13 @@ Either way, expect it to show "unhealthy" until you've actually got the
 companion app open and its MCP feature turned on — that's expected, not a
 bug.
 
+**Caution on Pattern B:** `--host 0.0.0.0` listens on every network
+interface, and on this machine `host.docker.internal` is your LAN IP, so
+anything registered this way is reachable by other devices on your network.
+Fine for a 3D app's MCP port; **never** do it for desktop control or shell
+access — those are deliberately local per-editor servers instead (see the
+power pack in `editors/README.md`).
+
 ## Updating an API key
 
 Just edit `.env` — no restart needed for the value itself to be read fresh
@@ -192,8 +199,10 @@ see the `localhost`-vs-`127.0.0.1` note in STATUS.md's Session 4 section
 if that ever seems to matter again.
 
 Overview / Balances / MCP Servers / Logs are read-only. **API Keys**
-writes `.env`, restarts the container, and re-runs `editors/cline/install.py`
-+ `editors/zed/install.py` — leave a field blank to keep its current value.
+writes `.env`, restarts the container, and re-runs the installers for every
+editor that embeds the master key (cline, zed, hermes, opencode, openwork,
+goose — the newer ones in `--no-rebind` mode so your model/agent choices
+survive) — leave a field blank to keep its current value.
 **Preference** picks the model-selection mode (same 10 as
 `set_preference.py`) and, for anything but "custom", applies it for real
 in one click. **Custom routing** hand-assigns each mode's model (the
@@ -233,7 +242,28 @@ Read `editors/hermes/README.md` before switching its default model to a
 Hermes-branded one -- none of them currently support tool calling on
 OpenRouter, which breaks file edits/commands/MCP tools.
 
-## Setting up another editor beyond these 8
+## Setting up OpenCode, OpenWork and Goose (+ the power pack)
+
+```bash
+python editors/opencode/install.py     # ~/.config/opencode (backs up first)
+python editors/openwork/install.py     # each OpenWork workspace's opencode.jsonc
+python editors/goose/install.py        # Goose config + custom provider (close `goose configure` first)
+```
+All three add the LiteLLM provider, the gateway MCP server and the
+[power pack](../editors/README.md#the-power-pack-closer-to-claude-desktop--code)
+(`desktop-commander` + `windows-mcp`). Useful flags: `--no-rebind` (only add
+things, keep your own model/agent choices), `--no-power` (skip desktop
+control and machine-wide file access). Open a **new terminal / restart the
+app** afterwards so it sees `LITELLM_API_KEY`. Verify:
+```bash
+opencode mcp list && opencode run "say pong"
+goose doctor && goose run --no-session -t "say pong"   # banner must say: litellm kilo-code
+```
+Check that Goose banner: if it says a different provider, Goose's newer
+`active_provider` setting is winning over what you configured (see
+STATUS.md, Session 6).
+
+## Setting up another editor beyond these 11
 
 Follow the pattern in `editors/`: point its model provider at
 `http://127.0.0.1:4000/v1` + your master key, and its MCP client at either

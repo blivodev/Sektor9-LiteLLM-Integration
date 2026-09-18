@@ -389,11 +389,21 @@ def keys():
                             cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace")
         results.append("Restarted litellm container" if r.returncode == 0 else f"Container restart FAILED: {r.stderr[-300:]}")
 
-        for script in ["editors/cline/install.py", "editors/zed/install.py"]:
+        # Every editor whose config embeds/derives from the master key. The
+        # newer installers run with --no-rebind: a key rotation must never
+        # reset a model/agent choice you made in the editor since installing.
+        for script, extra in [
+            ("editors/cline/install.py", []), ("editors/zed/install.py", []),
+            ("editors/hermes/install.py", ["--no-rebind"]),
+            ("editors/opencode/install.py", ["--no-rebind"]),
+            ("editors/openwork/install.py", ["--no-rebind"]),
+            ("editors/goose/install.py", ["--no-rebind"]),
+        ]:
             p = ROOT / script
             if p.exists():
-                r = subprocess.run([sys.executable, str(p)], capture_output=True, text=True, encoding="utf-8", errors="replace")
-                results.append(f"{script}: {'ok' if r.returncode == 0 else 'FAILED'} — {r.stdout.strip().splitlines()[-1] if r.stdout else r.stderr[-200:]}")
+                r = subprocess.run([sys.executable, str(p), *extra], capture_output=True, text=True, encoding="utf-8", errors="replace")
+                tail = (r.stdout.strip().splitlines() or [""])[-1] if r.returncode == 0 else (r.stderr.strip().splitlines() or ["(no output)"])[-1]
+                results.append(f"{script}: {'ok' if r.returncode == 0 else 'FAILED'} — {tail}")
 
         content = "<div class='card'><h2>Applied</h2><pre>" + "\n".join(results) + "</pre><p><a href='/keys'>Back</a></p></div>"
         return PAGE.format(content=content)

@@ -199,13 +199,21 @@ fi
 
 # ---------- 4f. Editor integrations ----------
 step "Editor/agent integrations (optional)"
-echo "5 editors/agents can point at this same LiteLLM + MCP setup -- see editors/README.md."
+echo "10 editors/agents can point at this same LiteLLM + MCP setup -- see editors/README.md."
 echo "Kilo Code is already fully configured. For the others:"
 if [ -n "$PYTHON" ]; then
   read -r -p "Wire up Cline now (VS Code extension, if installed)? (y/N): " do_cline
   [ "$do_cline" = "y" ] && "$PYTHON" "$ROOT/editors/cline/install.py"
   read -r -p "Wire up Zed now (if installed)? (y/N): " do_zed
   [ "$do_zed" = "y" ] && "$PYTHON" "$ROOT/editors/zed/install.py"
+  read -r -p "Wire up Hermes Agent now (if installed)? (y/N): " do_hermes
+  [ "$do_hermes" = "y" ] && "$PYTHON" "$ROOT/editors/hermes/install.py"
+  read -r -p "Wire up OpenCode now, incl. power pack (if installed)? (y/N): " do_opencode
+  [ "$do_opencode" = "y" ] && "$PYTHON" "$ROOT/editors/opencode/install.py"
+  read -r -p "Wire up OpenWork now, incl. power pack (if installed)? (y/N): " do_openwork
+  [ "$do_openwork" = "y" ] && "$PYTHON" "$ROOT/editors/openwork/install.py"
+  read -r -p "Wire up Goose now, incl. power pack (close 'goose configure' first; if installed)? (y/N): " do_goose
+  [ "$do_goose" = "y" ] && "$PYTHON" "$ROOT/editors/goose/install.py"
   read -r -p "Wire up GitHub Copilot Chat now (needs an active Copilot subscription)? (y/N): " do_copilot
   [ "$do_copilot" = "y" ] && "$PYTHON" "$ROOT/editors/copilot/install.py"
 fi

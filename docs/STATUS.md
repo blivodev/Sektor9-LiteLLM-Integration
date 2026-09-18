@@ -1,6 +1,101 @@
 # Status, bugs found & fixed, potential upgrades
 
-## Session 5 additions (this round)
+## Session 6 additions (this round)
+
+Asked: "how do I point Goose or OpenCode at my setup?", then "also set up
+OpenWork", then "install anything that brings some of them close to Claude
+Desktop/Code -- desktop control, remote/SSH, file browsing". All three
+editors are installed on this machine, so everything below was tested against
+the real binaries, not just docs.
+
+- **OpenCode** (`editors/opencode/`): `python editors/opencode/install.py`.
+  The real finding: your existing config pointed straight at DeepInfra and
+  OpenRouter, **bypassing LiteLLM entirely** (no fallbacks, no spend
+  tracking). Now it has a `litellm` provider + the gateway MCP server, and the
+  default model / `build` / `plan` / `general` / `explore` agents are bound to
+  `kilo-code` / `kilo-code` / `kilo-plan` / `kilo-ask` / `kilo-ask`. Your old
+  values (Claude Sonnet for `plan`, Gemini Flash for `general`) are kept in a
+  header comment plus one `.bak-*` file; `claude`/`gemini` remain selectable
+  models. Keys stay out of the file via OpenCode's `{env:LITELLM_API_KEY}`
+  substitution (confirmed live). Verified on your real config: 3 MCP servers
+  connected, `build · kilo-code` and `plan · kilo-plan` both answer.
+- **OpenWork** (`editors/openwork/`): it is a desktop app that embeds an
+  OpenCode engine per workspace and layers its own generated runtime config
+  with each workspace's `opencode.jsonc`, so the installer writes the
+  workspace file(s) (auto-detected from OpenWork's server state). Verified by
+  hiding the global OpenCode config and layering OpenWork's real runtime
+  config: the workspace file alone gave the engine the provider, all MCP
+  servers, and a working `openwork · kilo-code` chat. **Not verified**:
+  driving OpenWork's GUI itself.
+- **Goose** (`editors/goose/`): custom-provider JSON + YAML extensions,
+  sandboxed with `GOOSE_PATH_ROOT` for testing, then applied for real.
+  Real chat, a real gateway tool call and a real whole-machine listing via
+  desktop-commander all passed. Your real config (26 extensions after your
+  own `goose configure` session) was diffed against its backup: every
+  extension kept, no existing setting changed.
+- **The "power pack"** (`editors/_common/common.py`): `desktop-commander`
+  (whole-machine file browsing/search/edit, terminal, processes) and
+  `windows-mcp` (Windows desktop control), as **local stdio servers** for
+  OpenCode/OpenWork/Goose (+ Goose's built-in `computercontroller` enabled).
+  Deliberately *not* gateway entries: `host.docker.internal` is this
+  machine's LAN IP, so a host-side desktop-control server registered in the
+  gateway would have to listen beyond loopback. Hermes was left alone (native
+  `computer_use` + terminal/SSH backends); Cline/Kilo already had entries of
+  their own; Zed/Aider/Tabby/OpenHands/Copilot were not given it because I
+  couldn't verify it there. `ARCHITECTURE.md`'s old description of desktop
+  control as a gateway "host-companion" was wrong for this design and is fixed.
+- **Dashboard**: the API Keys page now re-runs every installer that embeds
+  the master key (cline, zed, hermes, opencode, openwork, goose), the newer
+  ones with `--no-rebind` so a key rotation never resets a model/agent choice.
+
+### Bugs and dead ends found (in the order hit)
+
+1. `windows-mcp` "Connection closed" in OpenCode: bare `windows-mcp` prints
+   help and exits; it needs `windows-mcp serve --transport stdio`.
+2. **Goose's native `streamable_http` extension does not send the
+   `Authorization` header** (gateway replied `authentication_required`,
+   Goose said "failed to initialize MCP client"). Confirmed the gateway
+   accepts the header via curl. Fixed with the `mcp-remote` stdio bridge.
+3. Trying to make that bridge read the key from the environment instead of
+   Goose's `config.yaml` **hung** (unauthenticated `mcp-remote` waits on an
+   OAuth flow), so the key is in the extension's `envs` -- same trade-off as
+   Cline's settings.
+4. A naive `//`-comment-stripping regex corrupted `"https://..."` strings (the
+   same false alarm hit earlier on `kilo.jsonc`); the JSONC parser is now
+   string-aware.
+5. Re-running the OpenCode installer created a fresh backup every time and
+   dropped its own "values this replaced" record. Now: one backup of the true
+   original, record carried forward (tested across 3 runs).
+6. **Goose looked configured but was still bypassing LiteLLM.** Goose 1.51's
+   `active_provider` + `providers:` selection (written by `goose configure`)
+   overrides the legacy `GOOSE_PROVIDER`/`GOOSE_MODEL` keys. The first
+   installer passed on a fresh config and silently did nothing on yours
+   (`active_provider: openrouter`); a "pong" from your real config had come
+   via OpenRouter. Caught only because the session banner read `openrouter
+   deepseek/deepseek-v4-flash`. Fixed: the installer sets both schemes and
+   prints what it replaced; re-verified on a copy of the real result
+   (banner `litellm kilo-code`). Lesson: check *which provider answered*, not
+   just that something answered.
+7. **Tool schemas dominate prompt size**: LiteLLM's spend log shows OpenCode
+   sending ~60k prompt tokens for a one-word reply (all gateway + power-pack
+   tool schemas on every request); Goose ~12k. Not a bug, but a real
+   per-message cost of "everything switched on" -- documented in
+   `editors/opencode/README.md` with the knobs to turn it down.
+8. **Test-harness lesson**: a `timeout`-killed `goose run` piped through
+   `grep | tail` printed nothing, because orphaned extension processes keep
+   the pipe open -- it looked like Goose had hung. LiteLLM's spend log
+   (`/spend/logs`) showed the request had actually succeeded in ~3s. When
+   output goes missing, check the provider-side record before concluding the
+   tool failed.
+9. **Two side effects of testing on your live setup, for the record**: (a) I
+   found a `goose configure` session of yours open and did not kill it; the
+   Goose installer now refuses to run while one is open, since it rewrites
+   `config.yaml` on exit. (b) My headless test of your real Goose config
+   started the OAuth flow of your **existing `glif` extension** and tried to
+   open a browser tab. Nothing was authorized; that extension is yours and I
+   left it alone (later tests ran on a copy with OAuth extensions off).
+
+## Session 5 additions
 
 - **Fixed a real, self-inflicted production incident**: `OPENROUTER_API_KEY`
   in `.env` had been overwritten with the literal string `hacked` earlier

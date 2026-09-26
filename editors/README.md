@@ -1,6 +1,6 @@
-# 10 supported editors/agents (+1 subscription-gated bonus)
+# 11 supported editors/agents (+1 subscription-gated bonus)
 
-All 10 point at the same LiteLLM proxy and the same 16-server MCP gateway
+All 11 point at the same LiteLLM proxy and the same 16-server MCP gateway
 — pick whichever fits how you like to work. Every candidate was checked
 for real, current maintenance status before being included here (3 other
 strong-looking candidates — **Void**, **Continue.dev**, and **Roo
@@ -21,6 +21,7 @@ reason).
 | [OpenCode](opencode/) | Terminal/desktop coding agent | native remote MCP | ✅ Fully live-tested with the real binary: chat via `build`/`plan` agents, all 3 MCP servers connected |
 | [OpenWork](openwork/) | Desktop "Claude Cowork" alternative (embeds OpenCode) | native remote MCP | ✅ Engine layer live-tested with OpenWork's own runtime config; GUI itself not driven |
 | [Goose](goose/) | CLI + desktop agent | `mcp-remote` bridge | ✅ Fully live-tested: chat, a gateway tool call, and a whole-machine file listing via desktop-commander |
+| [Cherry Studio](cherry-studio/) | Desktop AI Workspace & Agent | native SHTTP/SSE | ✅ Fully set up & live-tested with LiteLLM models and agents |
 
 **Tabby** is the odd one structurally: it's not an editor or extension by
 itself, it's its own self-hosted server that a thin IDE extension then

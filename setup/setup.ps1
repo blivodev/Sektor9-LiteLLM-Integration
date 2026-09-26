@@ -197,9 +197,11 @@ if ($pythonExe) {
 
 # ---------- 4f. Editor integrations ----------
 Write-Step "Editor/agent integrations (optional)"
-Write-Host "10 editors/agents can point at this same LiteLLM + MCP setup - see editors\README.md."
+Write-Host "11 editors/agents can point at this same LiteLLM + MCP setup - see editors\README.md."
 Write-Host "Kilo Code is already fully configured. For the others:"
 if ($pythonExe) {
+    $doCherry = Read-Host "Wire up Cherry Studio now (if installed)? (y/N)"
+    if ($doCherry -eq "y") { & $pythonExe (Join-Path $root "editors\cherry-studio\install.py") }
     $doCline = Read-Host "Wire up Cline now (VS Code extension, if installed)? (y/N)"
     if ($doCline -eq "y") { & $pythonExe (Join-Path $root "editors\cline\install.py") }
     $doZed = Read-Host "Wire up Zed now (if installed)? (y/N)"

@@ -1,0 +1,73 @@
+{
+  "$schema": "https://app.kilo.ai/config.json",
+  "provider": {
+    "litellm": {
+      "name": "LiteLLM",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "http://127.0.0.1:4000/v1"
+      },
+      "models": {
+        "sektor9-autorouter": {
+          "name": "Sektor9 AutoRouter (Best & Cheapest)",
+          "reasoning": true
+        },
+        "sektor9-code": {
+          "name": "Sektor9 Code (Implementation)",
+          "reasoning": true,
+          "modalities": { "input": ["text", "image"] }
+        },
+        "sektor9-ask": {
+          "name": "Sektor9 Ask (Q&A & Architecture)"
+        },
+        "sektor9-debug": {
+          "name": "Sektor9 Debug (Root-Cause & Stack Traces)",
+          "reasoning": true
+        },
+        "sektor9-plan": {
+          "name": "Sektor9 Plan (Step-by-Step Breakdown)"
+        },
+        "sektor9-orchestrator": {
+          "name": "Sektor9 Orchestrator (Multi-Agent)",
+          "reasoning": true
+        },
+        "sektor9-review": {
+          "name": "Sektor9 Review (Code Review & Audit)",
+          "reasoning": true
+        },
+        "sektor9-refactor": {
+          "name": "Sektor9 Refactor (Optimization & Clean Code)"
+        },
+        "sektor9-test": {
+          "name": "Sektor9 Test (Unit & E2E Testing)"
+        },
+        "sektor9-docs": {
+          "name": "Sektor9 Docs (Documentation & Specs)"
+        },
+        "sektor9-sql": {
+          "name": "Sektor9 SQL (Database & Migrations)"
+        },
+        "sektor9-devops": {
+          "name": "Sektor9 DevOps (Docker & CI/CD)"
+        },
+        "sektor9-creative": {
+          "name": "Sektor9 Creative (Design & Copy)"
+        }
+      }
+    }
+  },
+  "agent": {
+    "code": { "model": "litellm/sektor9-code" },
+    "ask": { "model": "litellm/sektor9-ask" },
+    "debug": { "model": "litellm/sektor9-debug" },
+    "plan": { "model": "litellm/sektor9-plan" },
+    "orchestrator": { "model": "litellm/sektor9-orchestrator" },
+    "explore": { "model": "litellm/sektor9-autorouter" },
+    "architect": { "model": "litellm/sektor9-plan" },
+    "code-reviewer": { "model": "litellm/sektor9-review" },
+    "code-simplifier": { "model": "litellm/sektor9-refactor" },
+    "code-skeptic": { "model": "litellm/sektor9-debug" },
+    "docs-specialist": { "model": "litellm/sektor9-docs" },
+    "data": { "model": "litellm/sektor9-sql" }
+  }
+}

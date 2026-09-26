@@ -1,23 +1,29 @@
-# LiteLLM + Postgres → Kilo Code
+# Sektor9 LiteLLM Integration
 
-A local LiteLLM proxy (backed by Postgres) that Kilo Code in VS Code talks to
-instead of calling model providers directly. Each Kilo Code mode maps to its
-own model, and every model has a 2-deep, cross-provider fallback chain so a
-single provider's outage, rate limit, or exhausted credit doesn't stop you
-mid-task — LiteLLM just retries the next provider in line.
+A unified local LiteLLM proxy and gateway (backed by Postgres) powering Sektor9 coding agents, editors, and tools. Each Sektor9 mode maps to its own specialized agent, supported by an intelligent **AutoRouter** (best & cheapest dynamic model routing), an automated 2-deep fallback chain across OpenRouter, DeepInfra, and Fireworks AI, Repomix codebase packaging, and a 16-server MCP gateway.
 
 **New here, or just want the full picture?** See [`docs/`](docs/) —
 a plain-language user guide, the architecture in detail, every bug found
 and fixed along the way, and how-to recipes for changing things yourself.
 
 All 5 provider keys (OpenRouter, DeepInfra, Fireworks, Anthropic, Gemini)
-are filled in and tested working. Still open: real credentials for the
-`meshy_3d`/`elevenlabs`/`suno_music` MCP servers (optional — see MCP gateway
-section below), and the host-companion apps (Unity/Godot/Nuclear) documented in
-`setup/README.md`. (Desktop control is handled separately — see the power pack
-in `editors/README.md`.)
+are filled in and tested working.
 
-## What's new: dashboard, 10 editors, local models, preferences
+## What's new in Sektor9 LiteLLM Integration
+
+- **Sektor9 Agent Suite & AutoRouter** — Specialized agents for every workflow:
+  - `sektor9-autorouter` (or `autorouter`): dynamically routes requests to the lowest-cost, highest-performance model available across all providers with live cost-based load balancing.
+  - `sektor9-code`: Fast, cost-efficient implementation agent (DeepSeek V4 Flash).
+  - `sektor9-ask`: Architecture queries and documentation (Llama 3.3 70B Turbo).
+  - `sektor9-debug`: Root-cause diagnosis and stack traces (DeepSeek V4.1 Flash).
+  - `sektor9-plan`: Step-by-step breakdown and system design (GLM-5.3 Flash).
+  - `sektor9-orchestrator`: Multi-agent coordination and high-level strategy (GPT-5.6).
+  - Specialized agents: `sektor9-review`, `sektor9-refactor`, `sektor9-test`, `sektor9-docs`, `sektor9-sql`, `sektor9-devops`, `sektor9-creative`.
+  - Full backward compatibility for `kilo-*` legacy model aliases.
+- **[Repomix](docs/repomix.md) Codebase Packaging** — Pack entire repositories into token-efficient XML or Markdown context files for LLM agents using `scripts/repomix_pack.py` and `scripts/repomix_pack.ps1`.
+- **Cherry Studio Native Integration** — One-click configuration script (`editors/cherry-studio/install.py`) registering all Sektor9 models, AutoRouter, and LiteLLM MCP gateway directly into Cherry Studio, configured with `bypassPermissions` for uninterrupted agent execution.
+- **11+ Supported Editors & Agents** — Kilo Code, Cherry Studio, Cline, Zed, Aider, OpenHands, Tabby, Hermes Agent, OpenCode, OpenWork, Goose, and GitHub Copilot Chat.
+- **[`dashboard/app.py`](dashboard/app.py)** — Web dashboard at http://127.0.0.1:8877 for container health, provider balances, logs, live preferences, and model catalogs.
 
 - **[`dashboard/app.py`](dashboard/app.py)** — one page for everything:
   container/MCP health, provider balances, a unified log viewer, an

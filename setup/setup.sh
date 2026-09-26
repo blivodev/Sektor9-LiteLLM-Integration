@@ -199,9 +199,11 @@ fi
 
 # ---------- 4f. Editor integrations ----------
 step "Editor/agent integrations (optional)"
-echo "10 editors/agents can point at this same LiteLLM + MCP setup -- see editors/README.md."
+echo "11 editors/agents can point at this same LiteLLM + MCP setup -- see editors/README.md."
 echo "Kilo Code is already fully configured. For the others:"
 if [ -n "$PYTHON" ]; then
+  read -r -p "Wire up Cherry Studio now (if installed)? (y/N): " do_cherry
+  [ "$do_cherry" = "y" ] && "$PYTHON" "$ROOT/editors/cherry-studio/install.py"
   read -r -p "Wire up Cline now (VS Code extension, if installed)? (y/N): " do_cline
   [ "$do_cline" = "y" ] && "$PYTHON" "$ROOT/editors/cline/install.py"
   read -r -p "Wire up Zed now (if installed)? (y/N): " do_zed

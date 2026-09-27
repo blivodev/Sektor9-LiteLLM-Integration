@@ -150,18 +150,18 @@ model_list:
   #    Kimi K3, or GPT-5.6 Luna). You never see an error message.
   # ═══════════════════════════════════════════════════════════════════════════
 
-  # ── [Primary Pool]: OpenRouter Default / Cost-Based Selection Across Execution Types
+  # ── [Primary Pool]: Fast, Tool-Capable Models (DeepSeek V4 Flash, V4.1 Flash, Llama 3.3, GLM 5.3)
   - model_name: sektor9-auto
     litellm_params:
-      model: openrouter/openrouter/auto
-      api_key: os.environ/OPENROUTER_API_KEY
+      model: deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731
+      api_key: os.environ/DEEPINFRA_API_KEY
+  - model_name: sektor9-auto
+    litellm_params:
+      model: fireworks_ai/deepseek-v4-flash-0731
+      api_key: os.environ/FIREWORKS_AI_API_KEY
   - model_name: sektor9-auto
     litellm_params:
       model: openrouter/deepseek/deepseek-v4.1-flash
-      api_key: os.environ/OPENROUTER_API_KEY
-  - model_name: sektor9-auto
-    litellm_params:
-      model: openrouter/z-ai/glm-5.3-flash
       api_key: os.environ/OPENROUTER_API_KEY
   - model_name: sektor9-auto
     litellm_params:
@@ -169,7 +169,15 @@ model_list:
       api_key: os.environ/OPENROUTER_API_KEY
   - model_name: sektor9-auto
     litellm_params:
+      model: openrouter/z-ai/glm-5.3-flash
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: sektor9-auto
+    litellm_params:
       model: openrouter/openai/gpt-5.6-luna
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: sektor9-auto
+    litellm_params:
+      model: openrouter/openrouter/auto
       api_key: os.environ/OPENROUTER_API_KEY
 
   # ── [Tier 1 Fallback]: Provider Fallback (DeepInfra & Fireworks AI)
@@ -221,12 +229,12 @@ model_list:
   # ELI5: Use "sektor9auto" or "auto" anywhere you configure an editor!
   - model_name: sektor9auto
     litellm_params:
-      model: openrouter/openrouter/auto
-      api_key: os.environ/OPENROUTER_API_KEY
+      model: deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731
+      api_key: os.environ/DEEPINFRA_API_KEY
   - model_name: auto
     litellm_params:
-      model: openrouter/openrouter/auto
-      api_key: os.environ/OPENROUTER_API_KEY
+      model: deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731
+      api_key: os.environ/DEEPINFRA_API_KEY
 
 
   # ═══════════════════════════════════════════════════════════════════════════
@@ -465,16 +473,6 @@ mcp_servers:
     args: ["--with", "mcp<2", "postgres-mcp", "--access-mode=unrestricted"]
     env:
       DATABASE_URI: os.environ/MCP_POSTGRES_DSN
-  language_server_go:
-    transport: stdio
-    command: npx
-    args: ["-y", "/opt/npx-shim", "/opt/go/bin/mcp-language-server", "-workspace", "/workspace", "-lsp", "gopls"]
-    timeout: 30
-  video_audio:
-    transport: stdio
-    command: npx
-    args: ["-y", "/opt/npx-shim", "uv", "run", "--directory", "/opt/video-audio-mcp", "server.py"]
-    timeout: 30
   ssh:
     transport: stdio
     command: npx
@@ -484,34 +482,56 @@ mcp_servers:
       SSH_PORT: os.environ/SSH_PORT
       SSH_USERNAME: os.environ/SSH_USERNAME
       SSH_PASSWORD: os.environ/SSH_PASSWORD
-  meshy_3d:
-    transport: stdio
-    command: npx
-    args: ["-y", "@meshy-ai/meshy-mcp-server"]
-    env:
-      MESHY_API_KEY: os.environ/MESHY_API_KEY
-  tripo_3d:
-    transport: stdio
-    command: npx
-    args: ["-y", "tripo-ai-mcp-server"]
-    env:
-      TRIPO_API_SECRET: os.environ/TRIPO_API_SECRET
-  elevenlabs:
-    transport: stdio
-    command: uvx
-    args: ["elevenlabs-mcp"]
-    env:
-      ELEVENLABS_API_KEY: os.environ/ELEVENLABS_API_KEY
-  suno_music:
-    transport: stdio
-    command: uvx
-    args: ["mcp-suno"]
-    env:
-      ACEDATACLOUD_API_TOKEN: os.environ/ACEDATACLOUD_API_TOKEN
-  blender:
-    transport: stdio
-    command: uvx
-    args: ["blender-mcp"]
-    env:
-      BLENDER_HOST: host.docker.internal
-      BLENDER_PORT: "9876"
+
+  # ── Optional / Specialized MCP Servers ──────────────────────────────────────
+  # 👶 ELI5: These servers are commented out by default so LiteLLM doesn't wait
+  # or crash on unconfigured API keys or offline services (e.g. Blender).
+  # Uncomment any of these whenever you provide the respective keys in .env!
+
+  # language_server_go:
+  #   transport: stdio
+  #   command: npx
+  #   args: ["-y", "/opt/npx-shim", "/opt/go/bin/mcp-language-server", "-workspace", "/workspace", "-lsp", "gopls"]
+  #   timeout: 30
+
+  # video_audio:
+  #   transport: stdio
+  #   command: npx
+  #   args: ["-y", "/opt/npx-shim", "uv", "run", "--directory", "/opt/video-audio-mcp", "server.py"]
+  #   timeout: 30
+
+  # meshy_3d:
+  #   transport: stdio
+  #   command: npx
+  #   args: ["-y", "@meshy-ai/meshy-mcp-server"]
+  #   env:
+  #     MESHY_API_KEY: os.environ/MESHY_API_KEY
+
+  # tripo_3d:
+  #   transport: stdio
+  #   command: npx
+  #   args: ["-y", "tripo-ai-mcp-server"]
+  #   env:
+  #     TRIPO_API_SECRET: os.environ/TRIPO_API_SECRET
+
+  # elevenlabs:
+  #   transport: stdio
+  #   command: uvx
+  #   args: ["elevenlabs-mcp"]
+  #   env:
+  #     ELEVENLABS_API_KEY: os.environ/ELEVENLABS_API_KEY
+
+  # suno_music:
+  #   transport: stdio
+  #   command: uvx
+  #   args: ["mcp-suno"]
+  #   env:
+  #     ACEDATACLOUD_API_TOKEN: os.environ/ACEDATACLOUD_API_TOKEN
+
+  # blender:
+  #   transport: stdio
+  #   command: uvx
+  #   args: ["blender-mcp"]
+  #   env:
+  #     BLENDER_HOST: host.docker.internal
+  #     BLENDER_PORT: "9876"

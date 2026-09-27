@@ -20,8 +20,32 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent.parent
 GATEWAY = "http://127.0.0.1:4000"  # 127.0.0.1 not localhost: see docs/STATUS.md (IPv6 dead end)
 
-# Used only if the proxy isn't reachable while installing.
-DEFAULT_MODELS = ["kilo-code", "kilo-ask", "kilo-debug", "kilo-plan", "kilo-orchestrator", "claude", "gemini"]
+# 👶 ELI5: Used if the LiteLLM proxy is offline while installing an editor.
+# We include Sektor9 Auto first, followed by all specialized agent modes.
+DEFAULT_MODELS = [
+    "sektor9-auto",
+    "sektor9-autorouter",
+    "sektor9-code",
+    "sektor9-ask",
+    "sektor9-debug",
+    "sektor9-plan",
+    "sektor9-orchestrator",
+    "sektor9-review",
+    "sektor9-refactor",
+    "sektor9-test",
+    "sektor9-docs",
+    "sektor9-sql",
+    "sektor9-devops",
+    "sektor9-creative",
+    "claude",
+    "gemini",
+    # Backward compatibility aliases
+    "kilo-code",
+    "kilo-ask",
+    "kilo-debug",
+    "kilo-plan",
+    "kilo-orchestrator",
+]
 
 
 def load_env() -> dict:

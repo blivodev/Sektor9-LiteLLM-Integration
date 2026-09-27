@@ -11,17 +11,22 @@ are filled in and tested working.
 
 ## What's new in Sektor9 LiteLLM Integration
 
-- **Sektor9 Agent Suite & AutoRouter** — Specialized agents for every workflow:
-  - `sektor9-autorouter` (or `autorouter`): dynamically routes requests to the lowest-cost, highest-performance model available across all providers with live cost-based load balancing.
+- **Sektor9 Auto & Universal Router with 3-Tier Fallbacks** — See [`docs/SEKTOR9_AUTO_GUIDE.md`](docs/SEKTOR9_AUTO_GUIDE.md) for the complete ELI5 guide:
+  - `sektor9-auto` (or `auto`, `sektor9auto`): Universal router dynamically selecting the cheapest model from the best available for code, plan, execute, search, and debugging.
+  - **3-Tier Safety Net**:
+    - **Tier 1 (Provider Fallback)**: DeepInfra & Fireworks AI (DeepSeek V4 Flash) if OpenRouter credits run out or rate limits hit.
+    - **Tier 2 (Model Fallback)**: Meta Llama 3.3 70B Turbo & GLM-5.3 Flash if the model family experiences downtime.
+    - **Tier 3 (Hybrid Combination Fallback)**: Google Gemini 3.8 Flash, Kimi K3, and GPT-5.6 Luna on independent infrastructure so requests NEVER fail.
+- **Sektor9 Specialized Agent Modes**:
   - `sektor9-code`: Fast, cost-efficient implementation agent (DeepSeek V4 Flash).
   - `sektor9-ask`: Architecture queries and documentation (Llama 3.3 70B Turbo).
   - `sektor9-debug`: Root-cause diagnosis and stack traces (DeepSeek V4.1 Flash).
   - `sektor9-plan`: Step-by-step breakdown and system design (GLM-5.3 Flash).
   - `sektor9-orchestrator`: Multi-agent coordination and high-level strategy (GPT-5.6).
   - Specialized agents: `sektor9-review`, `sektor9-refactor`, `sektor9-test`, `sektor9-docs`, `sektor9-sql`, `sektor9-devops`, `sektor9-creative`.
-  - Full backward compatibility for `kilo-*` legacy model aliases.
+  - Full backward compatibility for `kilo-*` legacy model aliases and `sektor9-autorouter`.
 - **[Repomix](docs/repomix.md) Codebase Packaging** — Pack entire repositories into token-efficient XML or Markdown context files for LLM agents using `scripts/repomix_pack.py` and `scripts/repomix_pack.ps1`.
-- **Cherry Studio Native Integration** — One-click configuration script (`editors/cherry-studio/install.py`) registering all Sektor9 models, AutoRouter, and LiteLLM MCP gateway directly into Cherry Studio, configured with `bypassPermissions` for uninterrupted agent execution.
+- **Cherry Studio Native Integration** — One-click configuration script (`editors/cherry-studio/install.py`) registering all Sektor9 models, Sektor9 Auto, and LiteLLM MCP gateway directly into Cherry Studio, configured with `bypassPermissions` for uninterrupted agent execution.
 - **11+ Supported Editors & Agents** — Kilo Code, Cherry Studio, Cline, Zed, Aider, OpenHands, Tabby, Hermes Agent, OpenCode, OpenWork, Goose, and GitHub Copilot Chat.
 - **[`dashboard/app.py`](dashboard/app.py)** — Web dashboard at http://127.0.0.1:8877 for container health, provider balances, logs, live preferences, and model catalogs.
 

@@ -18,17 +18,11 @@ providers:
     key_env: LITELLM_API_KEY
 
 model:
-  # Deliberately kilo-code, NOT a Hermes-branded model: the Hermes models
-  # (Hermes-3/4) currently show no tool-calling support on OpenRouter, and
-  # are pricier than kilo-code even where DeepInfra does support tools
-  # (Hermes-3-405B: $1.00/1M vs kilo-code's ~$0.18/1M out) -- verified
-  # live against OpenRouter's and DeepInfra's real catalogs, not assumed.
-  # A coding agent without reliable tool calls can't edit files or run
-  # commands, so this project's existing cheapest-capable-with-tools pick
-  # is what Hermes Agent uses by default here too. See README.md for the
-  # full comparison and how to point this at a Hermes model anyway if you
-  # want to try it for non-agentic chat/exploration.
-  default: kilo-code
+  # 👶 ELI5:
+  # Points Hermes Agent to `sektor9-auto`! This gives Hermes access to the
+  # cheapest top-performing model across code/plan/execute/search, backed
+  # by LiteLLM's 3-tier fallback safety net (OpenRouter -> DeepInfra/Fireworks -> Gemini/Kimi).
+  default: sektor9-auto
   provider: custom:litellm
 
 mcp_servers:

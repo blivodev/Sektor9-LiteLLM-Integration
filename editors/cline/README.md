@@ -33,11 +33,10 @@ Code), so this is a UI step:
 2. **API Provider** → **OpenAI Compatible**.
 3. **Base URL**: `http://127.0.0.1:4000/v1`
 4. **API Key**: your `LITELLM_MASTER_KEY` from `.env`.
-5. **Model ID**: any of `kilo-code` / `kilo-ask` / `kilo-debug` /
-   `kilo-plan` / `kilo-orchestrator` / `claude` / `gemini` (same models
-   config.yaml already defines for every other editor).
+5. **Model ID**: `sektor9-auto` 🌟 (**Recommended**: Universal smart router with 3-tier fallbacks), or specialized agents like `sektor9-code` / `sektor9-ask` / `sektor9-debug` / `sektor9-plan` / `sektor9-orchestrator` / `claude` / `gemini`.
 
 Cline doesn't have Kilo Code's 5-mode concept — it's one active
 model/profile at a time. Create one **Configuration Profile** per model
 above (Cline supports multiple named profiles) if you want to switch
-between them the way Kilo Code's mode picker does.
+between them the way Kilo Code's mode picker does. `sektor9-auto` is the
+best all-around pick because it dynamically routes to the cheapest best model!

@@ -40,13 +40,16 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_common"))
 import common  # noqa: E402
 
-# OpenCode agent -> LiteLLM model, mirroring the Kilo Code mapping in
-# docs/ARCHITECTURE.md (cheap tier for exploration/general, planner for plan).
+# 👶 ELI5: OpenCode agent -> LiteLLM model mapping.
+# - build: heavy code generation & bug fixes (sektor9-code)
+# - plan: architecture breakdown (sektor9-plan)
+# - general: smart all-around assistant (sektor9-auto)
+# - explore: codebase search & exploration (sektor9-auto)
 AGENT_BINDINGS = {
-    "build": "kilo-code",
-    "plan": "kilo-plan",
-    "general": "kilo-ask",
-    "explore": "kilo-ask",
+    "build": "sektor9-code",
+    "plan": "sektor9-plan",
+    "general": "sektor9-auto",
+    "explore": "sektor9-auto",
 }
 
 
@@ -159,8 +162,8 @@ def merge_config(cfg: dict, models: list[str], rebind: bool, agents: bool, power
             notes.append(f"{label}: {old}  ->  {value}")
         container[key] = value
 
-    set_val(cfg, "model", "litellm/kilo-code", "model")
-    set_val(cfg, "small_model", "litellm/kilo-ask", "small_model")
+    set_val(cfg, "model", "litellm/sektor9-auto", "model")
+    set_val(cfg, "small_model", "litellm/sektor9-ask", "small_model")
     if agents:
         agent_cfg = cfg.setdefault("agent", {})
         for agent, model in AGENT_BINDINGS.items():

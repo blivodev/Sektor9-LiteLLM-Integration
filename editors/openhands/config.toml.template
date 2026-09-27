@@ -6,7 +6,8 @@
 # relying on it, and let a future update fix anything that's off.
 
 [llm]
-model = "openai/kilo-code"
+# 👶 ELI5: Use Sektor9 Auto for autonomous agent workflows with 3-tier fallback!
+model = "openai/sektor9-auto"
 base_url = "http://127.0.0.1:4000/v1"
 api_key = "YOUR_LITELLM_MASTER_KEY"
 

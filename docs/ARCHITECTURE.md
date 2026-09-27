@@ -59,6 +59,7 @@ at one local LiteLLM proxy. LiteLLM then:
 
 | Mode | Primary | Why | Fallback chain |
 |---|---|---|---|
+| **Sektor9 Auto** | OpenRouter Dynamic Pool (`openrouter/auto`, `deepseek-v4.1-flash`, `glm-5.3-flash`, `llama-3.3-70b`) | Universal smart router across all purposes (code, plan, execute, search, debug) | → **Tier 1: Provider** (DeepInfra/Fireworks DeepSeek V4 Flash) → **Tier 2: Model** (Llama 3.3 70B / GLM-5.3) → **Tier 3: Hybrid** (Gemini 3.8 Flash / Kimi K3 / Luna) |
 | **Code** | DeepInfra `DeepSeek-V4-Flash-0731` | Highest call volume — cheapest model still strong at coding/agentic tool-use | → OpenRouter (same model) → Fireworks (same model) |
 | **Ask** | DeepInfra `Llama-3.3-70B-Turbo` | Already the best price/capability pick for general Q&A | → OpenRouter → Fireworks (same model) |
 | **Debug** | DeepInfra `DeepSeek-V4.1-Flash` | Debugging benefits from the pricier reasoning checkpoint over raw Code mode | → OpenRouter → Fireworks (same model) |

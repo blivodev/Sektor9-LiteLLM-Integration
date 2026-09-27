@@ -19,6 +19,16 @@
         "baseURL": "http://localhost:4000/v1"
       },
       "models": {
+        "sektor9-auto": {
+          "name": "Sektor9 Auto (Universal Router & Fallbacks)",
+          "tool_call": true,
+          "limit": { "context": 1048576, "output": 16384 }
+        },
+        "sektor9-autorouter": {
+          "name": "Sektor9 AutoRouter (Cheapest)",
+          "tool_call": true,
+          "limit": { "context": 1048576, "output": 16384 }
+        },
         "kilo-code": {
           "name": "Kilo Code (LiteLLM)",
           "tool_call": true,

@@ -50,9 +50,9 @@ writes, so nothing else you've configured there is touched:
 ]
 ```
 
-Open the chat panel (`Ctrl+Alt+I`) → model picker → your `kilo-code` /
-`kilo-ask` / `kilo-debug` / `kilo-plan` / `kilo-orchestrator` / `claude` /
-`gemini` models should already be listed under "LiteLLM (local)".
+Open the chat panel (`Ctrl+Alt+I`) → model picker → your `sektor9-auto`
+(recommended), `sektor9-code`, `sektor9-ask`, `sektor9-debug`, `sektor9-plan`,
+`sektor9-orchestrator`, `claude`, and `gemini` models will appear under "LiteLLM (local)".
 
 ## 2. MCP gateway (scripted, one manual prompt)
 

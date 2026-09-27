@@ -70,7 +70,11 @@ straight there if you don't want to check things manually below.
 
    The left sidebar has **Models + Endpoints** (every AI model it can use)
    and **MCP Servers** (every tool it can use) — click either to see the
-   full list and each one's live status (a green dot = working).
+   full list and each one's live status (a green dot = working):
+
+   ![LiteLLM Models & Endpoints](images/models-page.png)
+
+   *(For a video walkthrough of the interface, see [`docs/images/litellm-dashboard-demo.webp`](images/litellm-dashboard-demo.webp))*.
 
 ## Checking how much credit you have left
 
@@ -82,15 +86,15 @@ Two ways:
 2. **Each provider's own website** — OpenRouter, DeepInfra, Fireworks each
    have a billing/credits page; the status bar's menu links directly to them.
 
-## Using Kilo Code day-to-day
+## Using Sektor9 Auto & Kilo Code day-to-day
 
-You don't need to think about any of this most of the time — open VS Code,
-use Kilo Code normally. Behind the scenes, whichever mode you're in (Code,
-Ask, Debug, Plan, Orchestrator — visible in Kilo Code's own mode picker)
-is quietly going through the switchboard. If you ever want to deliberately
-use Claude or Gemini instead of your usual coding models, they're
-available too — just pick them from Kilo Code's model dropdown, they're
-not tied to any particular mode.
+You don't need to think about any of this most of the time — open VS Code or Cherry Studio,
+use your assistant normally. Behind the scenes, `sektor9-auto` dynamically routes
+your prompt to the cheapest top-tier model for the job (code, plan, execute, search)
+with 3-tier fallback protection if credits run out. Whichever mode you're in
+(Code, Ask, Debug, Plan, Orchestrator) is quietly going through the switchboard.
+If you ever want to deliberately use Claude or Gemini instead of your usual coding models,
+they're available too — just pick them from the model dropdown.
 
 ## Choosing how models get picked for you
 

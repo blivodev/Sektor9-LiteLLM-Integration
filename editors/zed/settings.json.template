@@ -4,13 +4,23 @@
       "litellm": {
         "api_url": "http://127.0.0.1:4000/v1",
         "available_models": [
-          { "name": "kilo-code", "display_name": "Kilo Code (LiteLLM)", "max_tokens": 128000, "capabilities": { "tools": true, "images": false } },
-          { "name": "kilo-ask", "display_name": "Kilo Ask (LiteLLM)", "max_tokens": 128000, "capabilities": { "tools": true, "images": false } },
-          { "name": "kilo-debug", "display_name": "Kilo Debug (LiteLLM)", "max_tokens": 128000, "capabilities": { "tools": true, "images": false } },
-          { "name": "kilo-plan", "display_name": "Kilo Plan (LiteLLM)", "max_tokens": 128000, "capabilities": { "tools": true, "images": false } },
-          { "name": "kilo-orchestrator", "display_name": "Kilo Orchestrator (LiteLLM)", "max_tokens": 200000, "capabilities": { "tools": true, "images": false } },
+          { "name": "sektor9-auto", "display_name": "Sektor9 Auto (Universal Router & Fallbacks)", "max_tokens": 128000, "capabilities": { "tools": true, "images": false } },
+          { "name": "sektor9-autorouter", "display_name": "Sektor9 AutoRouter (Cheapest)", "max_tokens": 128000, "capabilities": { "tools": true, "images": false } },
+          { "name": "sektor9-code", "display_name": "Sektor9 Code (Implementation)", "max_tokens": 128000, "capabilities": { "tools": true, "images": false } },
+          { "name": "sektor9-ask", "display_name": "Sektor9 Ask (Q&A)", "max_tokens": 128000, "capabilities": { "tools": true, "images": false } },
+          { "name": "sektor9-debug", "display_name": "Sektor9 Debug (Root-Cause)", "max_tokens": 128000, "capabilities": { "tools": true, "images": false } },
+          { "name": "sektor9-plan", "display_name": "Sektor9 Plan (System Design)", "max_tokens": 128000, "capabilities": { "tools": true, "images": false } },
+          { "name": "sektor9-orchestrator", "display_name": "Sektor9 Orchestrator (Multi-Agent)", "max_tokens": 200000, "capabilities": { "tools": true, "images": false } },
+          { "name": "sektor9-review", "display_name": "Sektor9 Review (Code Review)", "max_tokens": 128000, "capabilities": { "tools": true, "images": false } },
+          { "name": "sektor9-refactor", "display_name": "Sektor9 Refactor (Clean Code)", "max_tokens": 128000, "capabilities": { "tools": true, "images": false } },
+          { "name": "sektor9-test", "display_name": "Sektor9 Test (Unit & E2E)", "max_tokens": 128000, "capabilities": { "tools": true, "images": false } },
+          { "name": "sektor9-docs", "display_name": "Sektor9 Docs (Documentation)", "max_tokens": 128000, "capabilities": { "tools": true, "images": false } },
+          { "name": "sektor9-sql", "display_name": "Sektor9 SQL (Database)", "max_tokens": 128000, "capabilities": { "tools": true, "images": false } },
+          { "name": "sektor9-devops", "display_name": "Sektor9 DevOps (Docker/CI)", "max_tokens": 128000, "capabilities": { "tools": true, "images": false } },
+          { "name": "sektor9-creative", "display_name": "Sektor9 Creative (Design/Copy)", "max_tokens": 128000, "capabilities": { "tools": true, "images": false } },
           { "name": "claude", "display_name": "Claude (LiteLLM)", "max_tokens": 200000, "capabilities": { "tools": true, "images": false } },
-          { "name": "gemini", "display_name": "Gemini (LiteLLM)", "max_tokens": 128000, "capabilities": { "tools": true, "images": false } }
+          { "name": "gemini", "display_name": "Gemini (LiteLLM)", "max_tokens": 128000, "capabilities": { "tools": true, "images": false } },
+          { "name": "kilo-code", "display_name": "Kilo Code (Legacy)", "max_tokens": 128000, "capabilities": { "tools": true, "images": false } }
         ]
       }
     }

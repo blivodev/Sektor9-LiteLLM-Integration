@@ -124,6 +124,112 @@ model_list:
       api_key: os.environ/OPENROUTER_API_KEY
 
   # ═══════════════════════════════════════════════════════════════════════════
+  # ── Sektor9 Auto: Universal Smart Router with 3-Tier Fallbacks ────────────
+  # ═══════════════════════════════════════════════════════════════════════════
+  # 👶 ELI5 (Explain Like I'm 5):
+  # "What is this?"
+  # Think of Sektor9 Auto as your personal AI concierge. Instead of you having to
+  # decide whether to use DeepSeek, Llama, Claude, or GLM for coding, planning,
+  # or searching, you just ask Sektor9 Auto! It inspects current token prices and
+  # instantly routes your request to the cheapest top-tier model that fits the job.
+  #
+  # "What if credits run out or a provider goes down?"
+  # That's why we have a 3-TIER BULLETPROOF FALLBACK NET:
+  #
+  # 🔹 Tier 1 (Provider Fallback):
+  #    Same great model, different store! If OpenRouter runs out of credits or 429s,
+  #    LiteLLM automatically retries the prompt on DeepInfra or Fireworks AI.
+  #
+  # 🔹 Tier 2 (Model Fallback):
+  #    Different brain, same high IQ! If DeepSeek itself has a global outage,
+  #    LiteLLM seamlessly retries on Meta Llama 3.3 70B Turbo or GLM-5.3 Flash.
+  #
+  # 🔹 Tier 3 (Hybrid Combination Fallback):
+  #    The ultimate safety parachute! If both standard providers and open-weight models
+  #    fail, it switches to a completely different frontier provider (Gemini 3.8 Flash,
+  #    Kimi K3, or GPT-5.6 Luna). You never see an error message.
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  # ── [Primary Pool]: OpenRouter Default / Cost-Based Selection Across Execution Types
+  - model_name: sektor9-auto
+    litellm_params:
+      model: openrouter/openrouter/auto
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: sektor9-auto
+    litellm_params:
+      model: openrouter/deepseek/deepseek-v4.1-flash
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: sektor9-auto
+    litellm_params:
+      model: openrouter/z-ai/glm-5.3-flash
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: sektor9-auto
+    litellm_params:
+      model: openrouter/meta-llama/llama-3.3-70b-instruct
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: sektor9-auto
+    litellm_params:
+      model: openrouter/openai/gpt-5.6-luna
+      api_key: os.environ/OPENROUTER_API_KEY
+
+  # ── [Tier 1 Fallback]: Provider Fallback (DeepInfra & Fireworks AI)
+  # ELI5: OpenRouter credit empty or network down? Switch directly to DeepInfra or Fireworks!
+  - model_name: sektor9-auto-fallback-provider
+    litellm_params:
+      model: deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731
+      api_key: os.environ/DEEPINFRA_API_KEY
+  - model_name: sektor9-auto-fallback-provider
+    litellm_params:
+      model: fireworks_ai/deepseek-v4-flash-0731
+      api_key: os.environ/FIREWORKS_AI_API_KEY
+  - model_name: sektor9-auto-fallback-provider
+    litellm_params:
+      model: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
+      api_key: os.environ/DEEPINFRA_API_KEY
+
+  # ── [Tier 2 Fallback]: Model Architecture Fallback (Llama 3.3 70B & GLM-5.3)
+  # ELI5: DeepSeek family having issues? Switch to Llama 3.3 70B Turbo or GLM-5.3!
+  - model_name: sektor9-auto-fallback-model
+    litellm_params:
+      model: deepinfra/meta-llama/Llama-3.3-70B-Instruct-Turbo
+      api_key: os.environ/DEEPINFRA_API_KEY
+  - model_name: sektor9-auto-fallback-model
+    litellm_params:
+      model: fireworks_ai/glm-5p3-flash
+      api_key: os.environ/FIREWORKS_AI_API_KEY
+  - model_name: sektor9-auto-fallback-model
+    litellm_params:
+      model: deepinfra/zai-org/GLM-5.3
+      api_key: os.environ/DEEPINFRA_API_KEY
+
+  # ── [Tier 3 Fallback]: Hybrid Combination Fallback (Frontier Independent Providers)
+  # ELI5: Independent infrastructure and frontier models (Gemini Flash, Kimi K3, GPT-5.6 Luna)
+  - model_name: sektor9-auto-fallback-hybrid
+    litellm_params:
+      model: gemini/gemini-3.8-flash
+      api_key: os.environ/GEMINI_API_KEY
+  - model_name: sektor9-auto-fallback-hybrid
+    litellm_params:
+      model: fireworks_ai/kimi-k3
+      api_key: os.environ/FIREWORKS_AI_API_KEY
+  - model_name: sektor9-auto-fallback-hybrid
+    litellm_params:
+      model: deepinfra/moonshotai/Kimi-K3
+      api_key: os.environ/DEEPINFRA_API_KEY
+
+  # ── Sektor9-Auto Convenient Aliases
+  # ELI5: Use "sektor9auto" or "auto" anywhere you configure an editor!
+  - model_name: sektor9auto
+    litellm_params:
+      model: openrouter/openrouter/auto
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: auto
+    litellm_params:
+      model: openrouter/openrouter/auto
+      api_key: os.environ/OPENROUTER_API_KEY
+
+
+  # ═══════════════════════════════════════════════════════════════════════════
   # ── Additional Specialized Sektor9 Agents ──────────────────────────────────
   # ═══════════════════════════════════════════════════════════════════════════
 
@@ -292,7 +398,21 @@ router_settings:
     - { "sektor9-sql": ["sektor9-sql-fallback-1"] }
     - { "sektor9-devops": ["sektor9-devops-fallback-1"] }
     - { "sektor9-creative": ["sektor9-creative-fallback-1"] }
-    # Kilo fallbacks
+
+    # ── Sektor9 Auto: 3-Tier Fallback Chain ──────────────────────────────────
+    # 👶 ELI5: When any app asks for "sektor9-auto", "sektor9auto", or "auto":
+    # 1. LiteLLM first tries the cheapest candidate in the primary pool (OpenRouter).
+    # 2. If OpenRouter fails (no credits, rate limit, timeout), LiteLLM automatically
+    #    switches to Tier 1: Provider Fallback (DeepInfra / Fireworks AI).
+    # 3. If that fails or that model family is unavailable, it switches to
+    #    Tier 2: Model Fallback (Llama 3.3 70B Turbo / GLM-5.3).
+    # 4. If all standard options fail, it executes Tier 3: Hybrid Fallback
+    #    (Gemini 3.8 Flash / Kimi K3 / Luna) so your work is NEVER interrupted!
+    - { "sektor9-auto": ["sektor9-auto-fallback-provider", "sektor9-auto-fallback-model", "sektor9-auto-fallback-hybrid"] }
+    - { "sektor9auto": ["sektor9-auto-fallback-provider", "sektor9-auto-fallback-model", "sektor9-auto-fallback-hybrid"] }
+    - { "auto": ["sektor9-auto-fallback-provider", "sektor9-auto-fallback-model", "sektor9-auto-fallback-hybrid"] }
+
+    # Kilo fallbacks (legacy compatibility)
     - { "kilo-code": ["kilo-code-fallback-1", "kilo-code-fallback-2"] }
     - { "kilo-ask": ["kilo-ask-fallback-1", "kilo-ask-fallback-2"] }
     - { "kilo-debug": ["kilo-debug-fallback-1", "kilo-debug-fallback-2"] }

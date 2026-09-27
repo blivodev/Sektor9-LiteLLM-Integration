@@ -16,9 +16,9 @@ python editors/cherry-studio/install.py
 
 This updates Cherry Studio's SQLite database (`%APPDATA%\CherryStudio\Data\cherrystudio.sqlite`):
 1. **Model Provider**: Adds/enables `LiteLLM` with base URL `http://localhost:4000/v1` and your Master Key.
-2. **Models**: Registers `kilo-code`, `kilo-ask`, `kilo-debug`, `kilo-plan`, `kilo-orchestrator`, `gemini`, and `claude`.
+2. **Models**: Registers `sektor9-auto` (Universal AutoRouter with 3-tier fallbacks), `sektor9-autorouter`, all primary Sektor9 agents (`sektor9-code`, `sektor9-ask`, `sektor9-debug`, `sektor9-plan`, `sektor9-orchestrator`, `sektor9-review`, `sektor9-refactor`, `sektor9-test`, `sektor9-docs`, `sektor9-sql`, `sektor9-devops`, `sektor9-creative`), plus `gemini` and `claude`.
 3. **MCP Server**: Configures `LiteLLM` gateway at `http://localhost:4000/mcp` (StreamableHTTP/SSE transport with Bearer token).
-4. **Agents**: Configures `Cherry Support` and `Cherry Assistant` to use `kilo-code` (with `bypassPermissions` enabled).
+4. **Agents**: Configures `Cherry Support` and `Cherry Assistant` to use `sektor9-auto` (with `bypassPermissions` enabled for uninterrupted execution).
 
 ---
 
@@ -32,13 +32,15 @@ If you prefer to configure or verify settings inside Cherry Studio's UI:
 3. Set:
    - **Provider Name**: `LiteLLM`
    - **API Base URL**: `http://localhost:4000/v1`
-   - **API Key**: `43vKvXhwTkGQAn0EJONjcAWQ` (your `LITELLM_MASTER_KEY` in `.env`)
+   - **API Key**: your `LITELLM_MASTER_KEY` in `.env`
 4. Under Models, add:
-   - `kilo-code` (Coding model - DeepSeek V4 Flash with OpenRouter/Fireworks fallbacks)
-   - `kilo-ask` (Q&A - Llama 3.3 70B Turbo)
-   - `kilo-debug` (Debug/Reasoning - DeepSeek V4.1 Flash)
-   - `kilo-plan` (Architecture - GLM-5.3 Flash)
-   - `kilo-orchestrator` (Flagship - GPT-5.6-luna)
+   - `sektor9-auto` 🌟 (**Recommended**: Universal AutoRouter with 3-tier Provider/Model/Hybrid fallbacks)
+   - `sektor9-autorouter` (Dynamic cheapest-pick router)
+   - `sektor9-code` (Coding model - DeepSeek V4 Flash with OpenRouter/Fireworks fallbacks)
+   - `sektor9-ask` (Q&A - Llama 3.3 70B Turbo)
+   - `sektor9-debug` (Debug/Reasoning - DeepSeek V4.1 Flash)
+   - `sektor9-plan` (Architecture - GLM-5.3 Flash)
+   - `sektor9-orchestrator` (Flagship - GPT-5.6-luna)
    - `gemini` (Gemini 3.8 Flash - 1M context)
    - `claude` (Claude Sonnet 5)
 

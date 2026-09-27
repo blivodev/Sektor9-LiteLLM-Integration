@@ -8,6 +8,10 @@
         "baseURL": "http://127.0.0.1:4000/v1"
       },
       "models": {
+        "sektor9-auto": {
+          "name": "Sektor9 Auto (Universal Router & Fallbacks)",
+          "reasoning": true
+        },
         "sektor9-autorouter": {
           "name": "Sektor9 AutoRouter (Best & Cheapest)",
           "reasoning": true
@@ -57,12 +61,13 @@
     }
   },
   "agent": {
+    "auto": { "model": "litellm/sektor9-auto" },
     "code": { "model": "litellm/sektor9-code" },
     "ask": { "model": "litellm/sektor9-ask" },
     "debug": { "model": "litellm/sektor9-debug" },
     "plan": { "model": "litellm/sektor9-plan" },
     "orchestrator": { "model": "litellm/sektor9-orchestrator" },
-    "explore": { "model": "litellm/sektor9-autorouter" },
+    "explore": { "model": "litellm/sektor9-auto" },
     "architect": { "model": "litellm/sektor9-plan" },
     "code-reviewer": { "model": "litellm/sektor9-review" },
     "code-simplifier": { "model": "litellm/sektor9-refactor" },

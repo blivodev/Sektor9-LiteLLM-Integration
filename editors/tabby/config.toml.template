@@ -7,7 +7,7 @@
 # every other editor here uses.
 [model.chat.http]
 kind = "openai/chat"
-model_name = "kilo-code"
+model_name = "sektor9-auto"
 api_endpoint = "http://host.docker.internal:4000/v1"
 api_key = "{{LITELLM_MASTER_KEY}}"
 

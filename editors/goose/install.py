@@ -122,25 +122,24 @@ def merge_config(y: "YAML", path: Path, master_key: str, rebind: bool, power: bo
         path.parent.mkdir(parents=True, exist_ok=True)
         data = {}
     if rebind:
+        # 👶 ELI5: Bind Goose to Sektor9 Auto for cost-based routing and 3-tier fallbacks!
         data["GOOSE_PROVIDER"] = "litellm"   # legacy selection, still read by older Goose / fresh configs
-        data["GOOSE_MODEL"] = "kilo-code"
+        data["GOOSE_MODEL"] = "sektor9-auto"
     # Goose 1.51's `goose configure` writes a NEWER selection scheme
     # (`active_provider` + a `providers:` block) that takes PRECEDENCE over the
-    # GOOSE_PROVIDER keys above. Found the hard way: on a real config that had
-    # `active_provider: openrouter`, the legacy keys alone left Goose talking
-    # straight to OpenRouter (bypassing LiteLLM) while looking configured.
+    # GOOSE_PROVIDER keys above.
     if "active_provider" in data or "providers" in data:
         providers = data.setdefault("providers", {})
         entry = providers.setdefault("litellm", {})
         entry["enabled"] = True
         entry["configured"] = True
         if rebind or "model" not in entry:
-            entry["model"] = "kilo-code"
+            entry["model"] = "sektor9-auto"
         if rebind:
             prev = data.get("active_provider")
             if prev and prev != "litellm":
                 prev_model = (providers.get(prev) or {}).get("model", "?")
-                print(f"  active provider: {prev} ({prev_model})  ->  litellm (kilo-code)")
+                print(f"  active provider: {prev} ({prev_model})  ->  litellm (sektor9-auto)")
             data["active_provider"] = "litellm"
     exts = data.setdefault("extensions", {})
     exts["litellm-gateway"] = stdio_ext(

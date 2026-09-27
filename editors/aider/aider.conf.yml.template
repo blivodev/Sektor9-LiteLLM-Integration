@@ -4,6 +4,7 @@
 # Aider is built on LiteLLM's own Python SDK internally, so pointing it at
 # OUR LiteLLM proxy is just "another LiteLLM-compatible endpoint" to it.
 
+# 👶 ELI5: Points Aider directly to Sektor9 Auto for cheapest-model selection with 3-tier fallback.
 openai-api-base: http://127.0.0.1:4000
 openai-api-key: YOUR_LITELLM_MASTER_KEY
-model: openai/kilo-code
+model: openai/sektor9-auto

@@ -79,6 +79,10 @@ model_list:
   # ═══════════════════════════════════════════════════════════════════════════
   # ── AutoRouter Feature (Best & Cheapest Dynamic Model Selection) ─────────
   # ═══════════════════════════════════════════════════════════════════════════
+  # 👶 ELI5: AutoRouter automatically picks the cheapest and fastest high-performance
+  # model across your providers (DeepInfra, Fireworks AI, OpenRouter).
+  # Notice: openrouter/auto is excluded because its dynamic upstream model selection
+  # triggers uncontrolled reasoning chains that can exhaust tokens on Anthropic endpoints.
   - model_name: sektor9-autorouter
     litellm_params:
       model: deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731
@@ -95,12 +99,8 @@ model_list:
     litellm_params:
       model: deepinfra/meta-llama/Llama-3.3-70B-Instruct-Turbo
       api_key: os.environ/DEEPINFRA_API_KEY
-  - model_name: sektor9-autorouter
-    litellm_params:
-      model: openrouter/openrouter/auto
-      api_key: os.environ/OPENROUTER_API_KEY
 
-  # AutoRouter aliases
+  # AutoRouter aliases (for backwards compatibility and shorthand)
   - model_name: autorouter
     litellm_params:
       model: deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731
@@ -111,8 +111,12 @@ model_list:
       api_key: os.environ/FIREWORKS_AI_API_KEY
   - model_name: autorouter
     litellm_params:
-      model: openrouter/openrouter/auto
+      model: openrouter/deepseek/deepseek-v4.1-flash
       api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: autorouter
+    litellm_params:
+      model: deepinfra/meta-llama/Llama-3.3-70B-Instruct-Turbo
+      api_key: os.environ/DEEPINFRA_API_KEY
 
   - model_name: auto-router
     litellm_params:
@@ -120,8 +124,16 @@ model_list:
       api_key: os.environ/DEEPINFRA_API_KEY
   - model_name: auto-router
     litellm_params:
-      model: openrouter/openrouter/auto
+      model: fireworks_ai/deepseek-v4-flash-0731
+      api_key: os.environ/FIREWORKS_AI_API_KEY
+  - model_name: auto-router
+    litellm_params:
+      model: openrouter/deepseek/deepseek-v4.1-flash
       api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: auto-router
+    litellm_params:
+      model: deepinfra/meta-llama/Llama-3.3-70B-Instruct-Turbo
+      api_key: os.environ/DEEPINFRA_API_KEY
 
   # ═══════════════════════════════════════════════════════════════════════════
   # ── Sektor9 Auto: Universal Smart Router with 3-Tier Fallbacks ────────────
@@ -174,10 +186,6 @@ model_list:
   - model_name: sektor9-auto
     litellm_params:
       model: openrouter/openai/gpt-5.6-luna
-      api_key: os.environ/OPENROUTER_API_KEY
-  - model_name: sektor9-auto
-    litellm_params:
-      model: openrouter/openrouter/auto
       api_key: os.environ/OPENROUTER_API_KEY
 
   # ── [Tier 1 Fallback]: Provider Fallback (DeepInfra & Fireworks AI)
@@ -419,6 +427,9 @@ router_settings:
     - { "sektor9-auto": ["sektor9-auto-fallback-provider", "sektor9-auto-fallback-model", "sektor9-auto-fallback-hybrid"] }
     - { "sektor9auto": ["sektor9-auto-fallback-provider", "sektor9-auto-fallback-model", "sektor9-auto-fallback-hybrid"] }
     - { "auto": ["sektor9-auto-fallback-provider", "sektor9-auto-fallback-model", "sektor9-auto-fallback-hybrid"] }
+    - { "sektor9-autorouter": ["sektor9-auto-fallback-provider", "sektor9-auto-fallback-model", "sektor9-auto-fallback-hybrid"] }
+    - { "autorouter": ["sektor9-auto-fallback-provider", "sektor9-auto-fallback-model", "sektor9-auto-fallback-hybrid"] }
+    - { "auto-router": ["sektor9-auto-fallback-provider", "sektor9-auto-fallback-model", "sektor9-auto-fallback-hybrid"] }
 
     # Kilo fallbacks (legacy compatibility)
     - { "kilo-code": ["kilo-code-fallback-1", "kilo-code-fallback-2"] }

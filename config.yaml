@@ -1,72 +1,160 @@
 # ── Sektor9 LiteLLM Integration Configuration ──────────────────────────────
 # Master gateway configuration for LLM models, autoRouter, and MCP tools.
+#
+# Routing philosophy:
+#   routing_strategy = cost-based-routing
+#   For each model_name, multiple deployments of the SAME underlying model are
+#   listed across providers with explicit input/output cost per token. LiteLLM
+#   picks the CHEAPEST healthy deployment automatically, and fails over to the
+#   next-cheapest when one provider errors. OpenRouter is deliberately priced
+#   at the reseller markup (or tied) so it is the LAST resort, not the primary,
+#   except where it is genuinely the cheapest (tie broken by health).
+#   Every chain still spans different providers so no single one is a SPOF.
 
 model_list:
   # ═══════════════════════════════════════════════════════════════════════════
-  # ── Sektor9 Agent Modes (Primary + fallbacks across different providers) ──
-  # Each mode's chain deliberately spans a *different* provider per hop, so no
-  # single provider is a single point of failure. Primary is the best
-  # price/capability pick for that task; fallbacks step down in capability but
-  # stay task-appropriate (not all DeepSeek).
+  # ── Sektor9 Code (highest call volume) ────────────────────────────────────
+  # Model: DeepSeek V4.1 Flash — DeepInfra cheapest ($0.30/$1.20), OpenRouter
+  # same price, Fireworks same price. All three are the same model family.
   # ═══════════════════════════════════════════════════════════════════════════
-
-  # ── Mode: Sektor9 Code (Primary implementation model, highest call volume)
+  - model_name: sektor9-code
+    litellm_params:
+      model: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
+      api_key: os.environ/DEEPINFRA_API_KEY
+      input_cost_per_token: 0.0000003
+      output_cost_per_token: 0.0000012
   - model_name: sektor9-code
     litellm_params:
       model: openrouter/deepseek/deepseek-v4.1-flash
       api_key: os.environ/OPENROUTER_API_KEY
+      input_cost_per_token: 0.0000003
+      output_cost_per_token: 0.0000012
+  - model_name: sektor9-code
+    litellm_params:
+      model: fireworks_ai/deepseek-v4p1-flash
+      api_key: os.environ/FIREWORKS_AI_API_KEY
+      input_cost_per_token: 0.0000003
+      output_cost_per_token: 0.0000012
+
+  # Fallback group for sektor9-code (same model on all three already; this is
+  # a distinct group in case the above all fail AND a different model is better)
   - model_name: sektor9-code-fallback-1
     litellm_params:
       model: deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731
       api_key: os.environ/DEEPINFRA_API_KEY
+      input_cost_per_token: 0.00000008
+      output_cost_per_token: 0.00000018
+  - model_name: sektor9-code-fallback-1
+    litellm_params:
+      model: openrouter/deepseek/deepseek-v4-flash-0731
+      api_key: os.environ/OPENROUTER_API_KEY
+      input_cost_per_token: 0.0000000175
+      output_cost_per_token: 0.00000128
+  - model_name: sektor9-code-fallback-1
+    litellm_params:
+      model: fireworks_ai/deepseek-v4-flash-0731
+      api_key: os.environ/FIREWORKS_AI_API_KEY
+      input_cost_per_token: 0.00000022
+      output_cost_per_token: 0.00000066
   - model_name: sektor9-code-fallback-2
     litellm_params:
-      model: fireworks_ai/deepseek-v4p1-flash
-      api_key: os.environ/FIREWORKS_AI_API_KEY
+      model: openrouter/deepseek/deepseek-v4.1-flash
+      api_key: os.environ/OPENROUTER_API_KEY
+      input_cost_per_token: 0.0000003
+      output_cost_per_token: 0.0000012
 
-  # ── Mode: Sektor9 Ask (General Q&A / explaining code / architecture queries)
+  # ═══════════════════════════════════════════════════════════════════════════
+  # ── Sektor9 Ask (Q&A / explaining code / architecture) ────────────────────
+  # Model: Llama-3.3-70B — DeepInfra cheapest ($0.10/$0.32).
+  # ═══════════════════════════════════════════════════════════════════════════
+  - model_name: sektor9-ask
+    litellm_params:
+      model: deepinfra/meta-llama/Llama-3.3-70B-Instruct-Turbo
+      api_key: os.environ/DEEPINFRA_API_KEY
+      input_cost_per_token: 0.00000010
+      output_cost_per_token: 0.00000032
   - model_name: sektor9-ask
     litellm_params:
       model: openrouter/meta-llama/llama-3.3-70b-instruct
       api_key: os.environ/OPENROUTER_API_KEY
+      input_cost_per_token: 0.00000022
+      output_cost_per_token: 0.0000005
   - model_name: sektor9-ask-fallback-1
-    litellm_params:
-      model: deepinfra/meta-llama/Llama-3.3-70B-Instruct-Turbo
-      api_key: os.environ/DEEPINFRA_API_KEY
-  - model_name: sektor9-ask-fallback-2
     litellm_params:
       model: fireworks_ai/glm-5p3-flash
       api_key: os.environ/FIREWORKS_AI_API_KEY
+      input_cost_per_token: 0.00000015
+      output_cost_per_token: 0.0000005
+  - model_name: sektor9-ask-fallback-2
+    litellm_params:
+      model: openrouter/z-ai/glm-5.3-flash
+      api_key: os.environ/OPENROUTER_API_KEY
+      input_cost_per_token: 0.00000015
+      output_cost_per_token: 0.0000005
 
-  # ── Mode: Sektor9 Debug (Strong reasoning / stack traces / root-cause fixes)
+  # ═══════════════════════════════════════════════════════════════════════════
+  # ── Sektor9 Debug (strong reasoning / root-cause) ─────────────────────────
+  # Model: DeepSeek V4.1 Flash (DeepInfra cheapest).
+  # ═══════════════════════════════════════════════════════════════════════════
+  - model_name: sektor9-debug
+    litellm_params:
+      model: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
+      api_key: os.environ/DEEPINFRA_API_KEY
+      input_cost_per_token: 0.0000003
+      output_cost_per_token: 0.0000012
   - model_name: sektor9-debug
     litellm_params:
       model: openrouter/deepseek/deepseek-v4.1-flash
       api_key: os.environ/OPENROUTER_API_KEY
+      input_cost_per_token: 0.0000003
+      output_cost_per_token: 0.0000012
   - model_name: sektor9-debug-fallback-1
-    litellm_params:
-      model: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
-      api_key: os.environ/DEEPINFRA_API_KEY
-  - model_name: sektor9-debug-fallback-2
     litellm_params:
       model: fireworks_ai/deepseek-v4p1-flash
       api_key: os.environ/FIREWORKS_AI_API_KEY
+      input_cost_per_token: 0.0000003
+      output_cost_per_token: 0.0000012
+  - model_name: sektor9-debug-fallback-2
+    litellm_params:
+      model: openrouter/deepseek/deepseek-v4-flash-0731
+      api_key: os.environ/OPENROUTER_API_KEY
+      input_cost_per_token: 0.0000000175
+      output_cost_per_token: 0.00000128
 
-  # ── Mode: Sektor9 Plan (Step-by-step breakdown & system design)
+  # ═══════════════════════════════════════════════════════════════════════════
+  # ── Sektor9 Plan (step-by-step / system design) ───────────────────────────
+  # Model: GLM-5.3 Flash — OpenRouter & Fireworks same price ($0.15/$0.50);
+  # DeepInfra full GLM-5.3 is pricier but a capable fallback.
+  # ═══════════════════════════════════════════════════════════════════════════
   - model_name: sektor9-plan
     litellm_params:
       model: openrouter/z-ai/glm-5.3-flash
       api_key: os.environ/OPENROUTER_API_KEY
-  - model_name: sektor9-plan-fallback-1
+      input_cost_per_token: 0.00000015
+      output_cost_per_token: 0.0000005
+  - model_name: sektor9-plan
     litellm_params:
       model: fireworks_ai/glm-5p3-flash
       api_key: os.environ/FIREWORKS_AI_API_KEY
-  - model_name: sektor9-plan-fallback-2
+      input_cost_per_token: 0.00000015
+      output_cost_per_token: 0.0000005
+  - model_name: sektor9-plan-fallback-1
     litellm_params:
       model: deepinfra/zai-org/GLM-5.3
       api_key: os.environ/DEEPINFRA_API_KEY
+      input_cost_per_token: 0.000000039
+      output_cost_per_token: 0.0000048
+  - model_name: sektor9-plan-fallback-2
+    litellm_params:
+      model: openrouter/z-ai/glm-5.3-flash
+      api_key: os.environ/OPENROUTER_API_KEY
+      input_cost_per_token: 0.00000015
+      output_cost_per_token: 0.0000005
 
-  # ── Mode: Sektor9 Orchestrator (Multi-agent coordinator & tool planner)
+  # ═══════════════════════════════════════════════════════════════════════════
+  # ── Sektor9 Orchestrator (multi-agent coordinator) ────────────────────────
+  # Strongest model wins here (low volume, high blast radius).
+  # ═══════════════════════════════════════════════════════════════════════════
   - model_name: sektor9-orchestrator
     litellm_params:
       model: openrouter/openai/gpt-5.6-luna
@@ -82,127 +170,194 @@ model_list:
 
   # ═══════════════════════════════════════════════════════════════════════════
   # ── AutoRouter Feature (Best & Cheapest Dynamic Model Selection) ─────────
-  # Order is honoured by routing_strategy "simple-shuffle": lowest order tried
-  # first. Primary = OpenRouter, then DeepInfra, then Fireworks (the priciest
-  # of the three, so it's the last resort). All three are DeepSeek V4.x (they
-  # have reliable native tool-calling); if all fail, router_settings.fallbacks
-  # step down to sektor9-code -> its fallbacks.
+  # 3 deployments of the SAME model (DeepSeek V4.1 Flash) at the same price;
+  # cost-based-routing shuffles among the cheapest healthy ones. Order no
+  # longer matters — price does. OpenRouter is one of the equal-cost options.
   # ═══════════════════════════════════════════════════════════════════════════
+  - model_name: sektor9-autorouter
+    litellm_params:
+      model: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
+      api_key: os.environ/DEEPINFRA_API_KEY
+      input_cost_per_token: 0.0000003
+      output_cost_per_token: 0.0000012
   - model_name: sektor9-autorouter
     litellm_params:
       model: openrouter/deepseek/deepseek-v4.1-flash
       api_key: os.environ/OPENROUTER_API_KEY
-      order: 1
-  - model_name: sektor9-autorouter
-    litellm_params:
-      model: deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731
-      api_key: os.environ/DEEPINFRA_API_KEY
-      order: 2
+      input_cost_per_token: 0.0000003
+      output_cost_per_token: 0.0000012
   - model_name: sektor9-autorouter
     litellm_params:
       model: fireworks_ai/deepseek-v4p1-flash
       api_key: os.environ/FIREWORKS_AI_API_KEY
-      order: 3
+      input_cost_per_token: 0.0000003
+      output_cost_per_token: 0.0000012
 
   # AutoRouter alias: autorouter
   - model_name: autorouter
     litellm_params:
-      model: openrouter/deepseek/deepseek-v4.1-flash
-      api_key: os.environ/OPENROUTER_API_KEY
-      order: 1
+      model: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
+      api_key: os.environ/DEEPINFRA_API_KEY
+      input_cost_per_token: 0.0000003
+      output_cost_per_token: 0.0000012
   - model_name: autorouter
     litellm_params:
-      model: deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731
-      api_key: os.environ/DEEPINFRA_API_KEY
-      order: 2
+      model: openrouter/deepseek/deepseek-v4.1-flash
+      api_key: os.environ/OPENROUTER_API_KEY
+      input_cost_per_token: 0.0000003
+      output_cost_per_token: 0.0000012
   - model_name: autorouter
     litellm_params:
       model: fireworks_ai/deepseek-v4p1-flash
       api_key: os.environ/FIREWORKS_AI_API_KEY
-      order: 3
+      input_cost_per_token: 0.0000003
+      output_cost_per_token: 0.0000012
 
   # AutoRouter alias: auto-router
   - model_name: auto-router
     litellm_params:
-      model: openrouter/deepseek/deepseek-v4.1-flash
-      api_key: os.environ/OPENROUTER_API_KEY
-      order: 1
+      model: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
+      api_key: os.environ/DEEPINFRA_API_KEY
+      input_cost_per_token: 0.0000003
+      output_cost_per_token: 0.0000012
   - model_name: auto-router
     litellm_params:
-      model: deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731
-      api_key: os.environ/DEEPINFRA_API_KEY
-      order: 2
+      model: openrouter/deepseek/deepseek-v4.1-flash
+      api_key: os.environ/OPENROUTER_API_KEY
+      input_cost_per_token: 0.0000003
+      output_cost_per_token: 0.0000012
   - model_name: auto-router
     litellm_params:
       model: fireworks_ai/deepseek-v4p1-flash
       api_key: os.environ/FIREWORKS_AI_API_KEY
-      order: 3
+      input_cost_per_token: 0.0000003
+      output_cost_per_token: 0.0000012
 
   # ═══════════════════════════════════════════════════════════════════════════
-  # ── Additional Specialized Sektor9 Agents ──────────────────────────────────
+  # ── Specialized Sektor9 Agents ────────────────────────────────────────────
   # ═══════════════════════════════════════════════════════════════════════════
 
-  # ── Agent: Review (Code Review, Security Auditing, Performance Pitfalls)
+  # Review (code review / security / perf)
+  - model_name: sektor9-review
+    litellm_params:
+      model: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
+      api_key: os.environ/DEEPINFRA_API_KEY
+      input_cost_per_token: 0.0000003
+      output_cost_per_token: 0.0000012
   - model_name: sektor9-review
     litellm_params:
       model: openrouter/deepseek/deepseek-v4.1-flash
       api_key: os.environ/OPENROUTER_API_KEY
+      input_cost_per_token: 0.0000003
+      output_cost_per_token: 0.0000012
   - model_name: sektor9-review-fallback-1
+    litellm_params:
+      model: fireworks_ai/deepseek-v4p1-flash
+      api_key: os.environ/FIREWORKS_AI_API_KEY
+      input_cost_per_token: 0.0000003
+      output_cost_per_token: 0.0000012
+
+  # Refactor (clean code / modularity / dead code)
+  - model_name: sektor9-refactor
     litellm_params:
       model: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
       api_key: os.environ/DEEPINFRA_API_KEY
-
-  # ── Agent: Refactor (Clean Code, Modularity, Dead Code Removal)
+      input_cost_per_token: 0.0000003
+      output_cost_per_token: 0.0000012
   - model_name: sektor9-refactor
     litellm_params:
       model: openrouter/deepseek/deepseek-v4.1-flash
       api_key: os.environ/OPENROUTER_API_KEY
+      input_cost_per_token: 0.0000003
+      output_cost_per_token: 0.0000012
   - model_name: sektor9-refactor-fallback-1
     litellm_params:
       model: fireworks_ai/deepseek-v4p1-flash
       api_key: os.environ/FIREWORKS_AI_API_KEY
+      input_cost_per_token: 0.0000003
+      output_cost_per_token: 0.0000012
 
-  # ── Agent: Test (Unit, Integration, and E2E Test Suite Generation)
+  # Test (unit / integration / e2e)
   - model_name: sektor9-test
-    litellm_params:
-      model: openrouter/deepseek/deepseek-v4.1-flash
-      api_key: os.environ/OPENROUTER_API_KEY
-  - model_name: sektor9-test-fallback-1
     litellm_params:
       model: deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731
       api_key: os.environ/DEEPINFRA_API_KEY
+      input_cost_per_token: 0.00000008
+      output_cost_per_token: 0.00000018
+  - model_name: sektor9-test
+    litellm_params:
+      model: openrouter/deepseek/deepseek-v4-flash-0731
+      api_key: os.environ/OPENROUTER_API_KEY
+      input_cost_per_token: 0.0000000175
+      output_cost_per_token: 0.00000128
+  - model_name: sektor9-test-fallback-1
+    litellm_params:
+      model: fireworks_ai/deepseek-v4-flash-0731
+      api_key: os.environ/FIREWORKS_AI_API_KEY
+      input_cost_per_token: 0.00000022
+      output_cost_per_token: 0.00000066
 
-  # ── Agent: Docs (README, API References, Architecture Diagrams, Markdown)
+  # Docs (README / API refs / markdown)
+  - model_name: sektor9-docs
+    litellm_params:
+      model: deepinfra/meta-llama/Llama-3.3-70B-Instruct-Turbo
+      api_key: os.environ/DEEPINFRA_API_KEY
+      input_cost_per_token: 0.00000010
+      output_cost_per_token: 0.00000032
   - model_name: sektor9-docs
     litellm_params:
       model: openrouter/meta-llama/llama-3.3-70b-instruct
       api_key: os.environ/OPENROUTER_API_KEY
+      input_cost_per_token: 0.00000022
+      output_cost_per_token: 0.0000005
   - model_name: sektor9-docs-fallback-1
     litellm_params:
       model: fireworks_ai/glm-5p3-flash
       api_key: os.environ/FIREWORKS_AI_API_KEY
+      input_cost_per_token: 0.00000015
+      output_cost_per_token: 0.0000005
 
-  # ── Agent: SQL (Schema Design, Query Optimization, Migrations)
+  # SQL (schema / query optimization)
   - model_name: sektor9-sql
     litellm_params:
-      model: openrouter/deepseek/deepseek-v4.1-flash
+      model: deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731
+      api_key: os.environ/DEEPINFRA_API_KEY
+      input_cost_per_token: 0.00000008
+      output_cost_per_token: 0.00000018
+  - model_name: sektor9-sql
+    litellm_params:
+      model: openrouter/deepseek/deepseek-v4-flash-0731
       api_key: os.environ/OPENROUTER_API_KEY
+      input_cost_per_token: 0.0000000175
+      output_cost_per_token: 0.00000128
   - model_name: sektor9-sql-fallback-1
     litellm_params:
       model: deepinfra/meta-llama/Llama-3.3-70B-Instruct-Turbo
       api_key: os.environ/DEEPINFRA_API_KEY
+      input_cost_per_token: 0.00000010
+      output_cost_per_token: 0.00000032
 
-  # ── Agent: DevOps (Docker, CI/CD, Nginx, Gitea Actions, Linux)
+  # DevOps (docker / ci-cd / linux)
+  - model_name: sektor9-devops
+    litellm_params:
+      model: deepinfra/meta-llama/Llama-3.3-70B-Instruct-Turbo
+      api_key: os.environ/DEEPINFRA_API_KEY
+      input_cost_per_token: 0.00000010
+      output_cost_per_token: 0.00000032
   - model_name: sektor9-devops
     litellm_params:
       model: openrouter/meta-llama/llama-3.3-70b-instruct
       api_key: os.environ/OPENROUTER_API_KEY
+      input_cost_per_token: 0.00000022
+      output_cost_per_token: 0.0000005
   - model_name: sektor9-devops-fallback-1
     litellm_params:
       model: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
       api_key: os.environ/DEEPINFRA_API_KEY
+      input_cost_per_token: 0.0000003
+      output_cost_per_token: 0.0000012
 
-  # ── Agent: Creative (UI/UX Concepts, Game Lore, Copywriting)
+  # Creative (UI/UX / lore / copy)
   - model_name: sektor9-creative
     litellm_params:
       model: openrouter/openai/gpt-5.6-luna
@@ -211,6 +366,8 @@ model_list:
     litellm_params:
       model: deepinfra/meta-llama/Llama-3.3-70B-Instruct-Turbo
       api_key: os.environ/DEEPINFRA_API_KEY
+      input_cost_per_token: 0.00000010
+      output_cost_per_token: 0.00000032
 
   # ── Direct Flagship Access
   - model_name: claude
@@ -223,21 +380,15 @@ model_list:
       api_key: os.environ/GEMINI_API_KEY
 
 router_settings:
-  # simple-shuffle is required for `order:` on the autorouter deployments to be
-  # honoured (lowest order = tried first; the next order only receives traffic
-  # when every lower-order deployment is in cooldown/failed). The previous
-  # "cost-based-routing" ignored order and always picked the cheapest per-token
-  # price - Fireworks (0.22/0.66 per M) is the priciest of the three, so it was
-  # effectively never used. All other model groups have a single deployment and
-  # rely on router_settings.fallbacks below, so this strategy change is a no-op
-  # for them.
-  routing_strategy: "simple-shuffle"
+  # cost-based-routing: picks the CHEAPEST healthy deployment for each model.
+  # For same-model multi-provider deployments this routes to the lowest-priced
+  # provider first, with automatic failover to the next-cheapest. OpenRouter is
+  # never the primary when a cheaper direct provider hosts the same model.
+  routing_strategy: "cost-based-routing"
   num_retries: 2
   timeout: 180
   fallbacks:
-    # AutoRouter: order-based routing across 3 providers; if every deployment
-    # fails, step down to sektor9-code (and its cross-provider fallbacks) so the
-    # session never hard-errors on a single dead provider.
+    # AutoRouter: if every same-model deployment fails, step down to sektor9-code.
     - { "sektor9-autorouter": ["sektor9-code", "sektor9-code-fallback-1", "sektor9-code-fallback-2"] }
     - { "autorouter": ["sektor9-code", "sektor9-code-fallback-1", "sektor9-code-fallback-2"] }
     - { "auto-router": ["sektor9-code", "sektor9-code-fallback-1", "sektor9-code-fallback-2"] }
@@ -254,14 +405,10 @@ router_settings:
     - { "sektor9-devops": ["sektor9-devops-fallback-1"] }
     - { "sektor9-creative": ["sektor9-creative-fallback-1"] }
 
-
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
   database_url: os.environ/DATABASE_URL
 
-# ═══════════════════════════════════════════════════════════════════════════
-# ── MCP Gateway Servers ───────────────────────────────────────────────────
-# ═══════════════════════════════════════════════════════════════════════════
 mcp_servers:
   filesystem:
     transport: stdio

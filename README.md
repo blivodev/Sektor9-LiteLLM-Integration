@@ -149,33 +149,29 @@ in Kilo Code whenever you specifically want one of them. Two open items:
 
 ## Model routing
 
-Every mode's chain deliberately spans a *different* provider per hop, so no
-single provider is a single point of failure. **OpenRouter is primary** (best
-price/capability mix), DeepInfra is fallback-1, Fireworks is fallback-2. When a
-provider is down (e.g. OpenRouter budget-cap or Fireworks suspension), LiteLLM
-fails over to the next working provider automatically — verified live.
+**`routing_strategy: cost-based-routing`** — for each mode, the same model is
+deployed on multiple providers with explicit `input_cost_per_token` /
+`output_cost_per_token`. LiteLLM automatically routes to the **cheapest healthy
+provider** for that model, with failover to the next-cheapest on error (verified
+live: with OpenRouter budget-capped and Fireworks suspended, `sektor9-code`
+routes to DeepInfra).
 
-| Mode | Primary (OpenRouter) | Fallback 1 (DeepInfra) | Fallback 2 (Fireworks) |
-|---|---|---|---|
-| **Code** | `deepseek-v4.1-flash` | `DeepSeek-V4-Flash-0731` | `deepseek-v4p1-flash` |
-| **Ask** | `llama-3.3-70b-instruct` | `Llama-3.3-70B-Turbo` | `glm-5p3-flash` |
-| **Debug** | `deepseek-v4.1-flash` | `DeepSeek-V4.1-Flash` | `deepseek-v4p1-flash` |
-| **Plan** | `glm-5.3-flash` | `glm-5p3-flash` | `GLM-5.3` |
-| **Orchestrator** | `gpt-5.6-luna` | `kimi-k3` (Fireworks) | `Kimi-K3` (DeepInfra) |
-| **Review/Refactor/Test/SQL** | `deepseek-v4.1-flash` | `DeepSeek-V4.1/V4-Flash` | (provider varies) |
-| **Docs/DevOps** | `llama-3.3-70b-instruct` | `glm-5p3-flash` / `DeepSeek-V4.1-Flash` | — |
-| **Creative** | `gpt-5.6-luna` | `Llama-3.3-70B-Turbo` | — |
+Current per-model pricing (per 1M tokens, input/output):
 
-Why these specifically:
-- **Code/Debug/Review/Refactor/Test/SQL** — DeepSeek V4.x is the best
-  price/capability coding model; primary is the OpenRouter route, falling to
-  the same family on DeepInfra/Fireworks.
-- **Ask/Docs/DevOps** — Llama-3.3-70B is the best general-knowledge
-  price/capability pick; GLM covers the Fireworks hop.
-- **Plan** — GLM-5.3 is the best planning/capability pick.
-- **Orchestrator** stays on the strongest model (GPT) since a bad delegate
-  decision cascades to every sub-agent; Kimi covers the fallbacks.
-- **Creative** uses GPT primary + Llama fallback for prose/copywriting quality.
+| Mode | Model | DeepInfra | OpenRouter | Fireworks |
+|---|---|---|---|---|
+| **Code / Debug / Review / Refactor** | DeepSeek V4.1 Flash | $0.30/$1.20 (picked) | $0.30/$1.20 | $0.30/$1.20 |
+| **Test / SQL** | DeepSeek V4 Flash 0731 | $0.08/$0.18 (picked) | $0.0175/$1.28 | $0.22/$0.66 |
+| **Ask / Docs / DevOps** | Llama-3.3-70B | $0.10/$0.32 (picked) | $0.22/$0.50 | — |
+| **Plan** | GLM-5.3 Flash | (full GLM-5.3 fb) | $0.15/$0.50 | $0.15/$0.50 |
+| **Orchestrator** | GPT-5.6 Luna / Kimi | Kimi-K3 (fb2) | GPT-5.6 (primary) | kimi-k3 (fb1) |
+| **Creative** | GPT-5.6 Luna / Llama | Llama-3.3 (fb) | GPT-5.6 (primary) | — |
+
+OpenRouter is **not** forced to be last — the router picks whichever provider is
+genuinely cheapest for that model. Where OpenRouter is tied (DeepSeek V4.1) or
+pricier (Llama-3.3), it is naturally deprioritized; where it's the only option
+(GPT-5.6, GLM-5.3 via z-ai), it is primary. Every chain still spans 2-3
+different providers so no single one is a single point of failure.
 
 **Kilo aliases were removed** — the gateway is Sektor9-only now.
 

@@ -3,32 +3,36 @@
 
 model_list:
   # ═══════════════════════════════════════════════════════════════════════════
-  # ── Sektor9 Primary Agent Modes ───────────────────────────────────────────
+  # ── Sektor9 Agent Modes (Primary + fallbacks across different providers) ──
+  # Each mode's chain deliberately spans a *different* provider per hop, so no
+  # single provider is a single point of failure. Primary is the best
+  # price/capability pick for that task; fallbacks step down in capability but
+  # stay task-appropriate (not all DeepSeek).
   # ═══════════════════════════════════════════════════════════════════════════
 
   # ── Mode: Sektor9 Code (Primary implementation model, highest call volume)
   - model_name: sektor9-code
     litellm_params:
-      model: deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731
-      api_key: os.environ/DEEPINFRA_API_KEY
-  - model_name: sektor9-code-fallback-1
-    litellm_params:
       model: openrouter/deepseek/deepseek-v4.1-flash
       api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: sektor9-code-fallback-1
+    litellm_params:
+      model: deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731
+      api_key: os.environ/DEEPINFRA_API_KEY
   - model_name: sektor9-code-fallback-2
     litellm_params:
-      model: fireworks_ai/deepseek-v4-flash-0731
+      model: fireworks_ai/deepseek-v4p1-flash
       api_key: os.environ/FIREWORKS_AI_API_KEY
 
   # ── Mode: Sektor9 Ask (General Q&A / explaining code / architecture queries)
   - model_name: sektor9-ask
     litellm_params:
-      model: deepinfra/meta-llama/Llama-3.3-70B-Instruct-Turbo
-      api_key: os.environ/DEEPINFRA_API_KEY
-  - model_name: sektor9-ask-fallback-1
-    litellm_params:
       model: openrouter/meta-llama/llama-3.3-70b-instruct
       api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: sektor9-ask-fallback-1
+    litellm_params:
+      model: deepinfra/meta-llama/Llama-3.3-70B-Instruct-Turbo
+      api_key: os.environ/DEEPINFRA_API_KEY
   - model_name: sektor9-ask-fallback-2
     litellm_params:
       model: fireworks_ai/glm-5p3-flash
@@ -37,12 +41,12 @@ model_list:
   # ── Mode: Sektor9 Debug (Strong reasoning / stack traces / root-cause fixes)
   - model_name: sektor9-debug
     litellm_params:
-      model: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
-      api_key: os.environ/DEEPINFRA_API_KEY
-  - model_name: sektor9-debug-fallback-1
-    litellm_params:
       model: openrouter/deepseek/deepseek-v4.1-flash
       api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: sektor9-debug-fallback-1
+    litellm_params:
+      model: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
+      api_key: os.environ/DEEPINFRA_API_KEY
   - model_name: sektor9-debug-fallback-2
     litellm_params:
       model: fireworks_ai/deepseek-v4p1-flash
@@ -51,12 +55,12 @@ model_list:
   # ── Mode: Sektor9 Plan (Step-by-step breakdown & system design)
   - model_name: sektor9-plan
     litellm_params:
-      model: fireworks_ai/glm-5p3-flash
-      api_key: os.environ/FIREWORKS_AI_API_KEY
-  - model_name: sektor9-plan-fallback-1
-    litellm_params:
       model: openrouter/z-ai/glm-5.3-flash
       api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: sektor9-plan-fallback-1
+    litellm_params:
+      model: fireworks_ai/glm-5p3-flash
+      api_key: os.environ/FIREWORKS_AI_API_KEY
   - model_name: sektor9-plan-fallback-2
     litellm_params:
       model: deepinfra/zai-org/GLM-5.3
@@ -78,50 +82,61 @@ model_list:
 
   # ═══════════════════════════════════════════════════════════════════════════
   # ── AutoRouter Feature (Best & Cheapest Dynamic Model Selection) ─────────
+  # Order is honoured by routing_strategy "simple-shuffle": lowest order tried
+  # first. Primary = OpenRouter, then DeepInfra, then Fireworks (the priciest
+  # of the three, so it's the last resort). All three are DeepSeek V4.x (they
+  # have reliable native tool-calling); if all fail, router_settings.fallbacks
+  # step down to sektor9-code -> its fallbacks.
   # ═══════════════════════════════════════════════════════════════════════════
-  - model_name: sektor9-autorouter
-    litellm_params:
-      model: deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731
-      api_key: os.environ/DEEPINFRA_API_KEY
-  - model_name: sektor9-autorouter
-    litellm_params:
-      model: fireworks_ai/deepseek-v4-flash-0731
-      api_key: os.environ/FIREWORKS_AI_API_KEY
   - model_name: sektor9-autorouter
     litellm_params:
       model: openrouter/deepseek/deepseek-v4.1-flash
       api_key: os.environ/OPENROUTER_API_KEY
+      order: 1
   - model_name: sektor9-autorouter
-    litellm_params:
-      model: deepinfra/meta-llama/Llama-3.3-70B-Instruct-Turbo
-      api_key: os.environ/DEEPINFRA_API_KEY
-  - model_name: sektor9-autorouter
-    litellm_params:
-      model: openrouter/openrouter/auto
-      api_key: os.environ/OPENROUTER_API_KEY
-
-  # AutoRouter aliases
-  - model_name: autorouter
     litellm_params:
       model: deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731
       api_key: os.environ/DEEPINFRA_API_KEY
-  - model_name: autorouter
+      order: 2
+  - model_name: sektor9-autorouter
     litellm_params:
-      model: fireworks_ai/deepseek-v4-flash-0731
+      model: fireworks_ai/deepseek-v4p1-flash
       api_key: os.environ/FIREWORKS_AI_API_KEY
+      order: 3
+
+  # AutoRouter alias: autorouter
   - model_name: autorouter
     litellm_params:
-      model: openrouter/openrouter/auto
+      model: openrouter/deepseek/deepseek-v4.1-flash
       api_key: os.environ/OPENROUTER_API_KEY
+      order: 1
+  - model_name: autorouter
+    litellm_params:
+      model: deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731
+      api_key: os.environ/DEEPINFRA_API_KEY
+      order: 2
+  - model_name: autorouter
+    litellm_params:
+      model: fireworks_ai/deepseek-v4p1-flash
+      api_key: os.environ/FIREWORKS_AI_API_KEY
+      order: 3
 
+  # AutoRouter alias: auto-router
+  - model_name: auto-router
+    litellm_params:
+      model: openrouter/deepseek/deepseek-v4.1-flash
+      api_key: os.environ/OPENROUTER_API_KEY
+      order: 1
   - model_name: auto-router
     litellm_params:
       model: deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731
       api_key: os.environ/DEEPINFRA_API_KEY
+      order: 2
   - model_name: auto-router
     litellm_params:
-      model: openrouter/openrouter/auto
-      api_key: os.environ/OPENROUTER_API_KEY
+      model: fireworks_ai/deepseek-v4p1-flash
+      api_key: os.environ/FIREWORKS_AI_API_KEY
+      order: 3
 
   # ═══════════════════════════════════════════════════════════════════════════
   # ── Additional Specialized Sektor9 Agents ──────────────────────────────────
@@ -130,38 +145,38 @@ model_list:
   # ── Agent: Review (Code Review, Security Auditing, Performance Pitfalls)
   - model_name: sektor9-review
     litellm_params:
-      model: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
-      api_key: os.environ/DEEPINFRA_API_KEY
-  - model_name: sektor9-review-fallback-1
-    litellm_params:
       model: openrouter/deepseek/deepseek-v4.1-flash
       api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: sektor9-review-fallback-1
+    litellm_params:
+      model: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
+      api_key: os.environ/DEEPINFRA_API_KEY
 
   # ── Agent: Refactor (Clean Code, Modularity, Dead Code Removal)
   - model_name: sektor9-refactor
     litellm_params:
-      model: deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731
-      api_key: os.environ/DEEPINFRA_API_KEY
+      model: openrouter/deepseek/deepseek-v4.1-flash
+      api_key: os.environ/OPENROUTER_API_KEY
   - model_name: sektor9-refactor-fallback-1
     litellm_params:
-      model: fireworks_ai/deepseek-v4-flash-0731
+      model: fireworks_ai/deepseek-v4p1-flash
       api_key: os.environ/FIREWORKS_AI_API_KEY
 
   # ── Agent: Test (Unit, Integration, and E2E Test Suite Generation)
   - model_name: sektor9-test
     litellm_params:
-      model: deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731
-      api_key: os.environ/DEEPINFRA_API_KEY
-  - model_name: sektor9-test-fallback-1
-    litellm_params:
       model: openrouter/deepseek/deepseek-v4.1-flash
       api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: sektor9-test-fallback-1
+    litellm_params:
+      model: deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731
+      api_key: os.environ/DEEPINFRA_API_KEY
 
   # ── Agent: Docs (README, API References, Architecture Diagrams, Markdown)
   - model_name: sektor9-docs
     litellm_params:
-      model: deepinfra/meta-llama/Llama-3.3-70B-Instruct-Turbo
-      api_key: os.environ/DEEPINFRA_API_KEY
+      model: openrouter/meta-llama/llama-3.3-70b-instruct
+      api_key: os.environ/OPENROUTER_API_KEY
   - model_name: sektor9-docs-fallback-1
     litellm_params:
       model: fireworks_ai/glm-5p3-flash
@@ -170,18 +185,18 @@ model_list:
   # ── Agent: SQL (Schema Design, Query Optimization, Migrations)
   - model_name: sektor9-sql
     litellm_params:
-      model: deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731
-      api_key: os.environ/DEEPINFRA_API_KEY
+      model: openrouter/deepseek/deepseek-v4.1-flash
+      api_key: os.environ/OPENROUTER_API_KEY
   - model_name: sektor9-sql-fallback-1
     litellm_params:
-      model: openrouter/meta-llama/llama-3.3-70b-instruct
-      api_key: os.environ/OPENROUTER_API_KEY
+      model: deepinfra/meta-llama/Llama-3.3-70B-Instruct-Turbo
+      api_key: os.environ/DEEPINFRA_API_KEY
 
   # ── Agent: DevOps (Docker, CI/CD, Nginx, Gitea Actions, Linux)
   - model_name: sektor9-devops
     litellm_params:
-      model: fireworks_ai/glm-5p3-flash
-      api_key: os.environ/FIREWORKS_AI_API_KEY
+      model: openrouter/meta-llama/llama-3.3-70b-instruct
+      api_key: os.environ/OPENROUTER_API_KEY
   - model_name: sektor9-devops-fallback-1
     litellm_params:
       model: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
@@ -190,79 +205,11 @@ model_list:
   # ── Agent: Creative (UI/UX Concepts, Game Lore, Copywriting)
   - model_name: sektor9-creative
     litellm_params:
-      model: deepinfra/meta-llama/Llama-3.3-70B-Instruct-Turbo
-      api_key: os.environ/DEEPINFRA_API_KEY
+      model: openrouter/openai/gpt-5.6-luna
+      api_key: os.environ/OPENROUTER_API_KEY
   - model_name: sektor9-creative-fallback-1
     litellm_params:
-      model: openrouter/openai/gpt-5.6-luna
-      api_key: os.environ/OPENROUTER_API_KEY
-
-  # ═══════════════════════════════════════════════════════════════════════════
-  # ── Backward Compatibility: Kilo Aliases ───────────────────────────────────
-  # ═══════════════════════════════════════════════════════════════════════════
-  - model_name: kilo-code
-    litellm_params:
-      model: deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731
-      api_key: os.environ/DEEPINFRA_API_KEY
-  - model_name: kilo-code-fallback-1
-    litellm_params:
-      model: openrouter/deepseek/deepseek-v4.1-flash
-      api_key: os.environ/OPENROUTER_API_KEY
-  - model_name: kilo-code-fallback-2
-    litellm_params:
-      model: fireworks_ai/deepseek-v4-flash-0731
-      api_key: os.environ/FIREWORKS_AI_API_KEY
-
-  - model_name: kilo-ask
-    litellm_params:
       model: deepinfra/meta-llama/Llama-3.3-70B-Instruct-Turbo
-      api_key: os.environ/DEEPINFRA_API_KEY
-  - model_name: kilo-ask-fallback-1
-    litellm_params:
-      model: openrouter/meta-llama/llama-3.3-70b-instruct
-      api_key: os.environ/OPENROUTER_API_KEY
-  - model_name: kilo-ask-fallback-2
-    litellm_params:
-      model: fireworks_ai/glm-5p3-flash
-      api_key: os.environ/FIREWORKS_AI_API_KEY
-
-  - model_name: kilo-debug
-    litellm_params:
-      model: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
-      api_key: os.environ/DEEPINFRA_API_KEY
-  - model_name: kilo-debug-fallback-1
-    litellm_params:
-      model: openrouter/deepseek/deepseek-v4.1-flash
-      api_key: os.environ/OPENROUTER_API_KEY
-  - model_name: kilo-debug-fallback-2
-    litellm_params:
-      model: fireworks_ai/deepseek-v4p1-flash
-      api_key: os.environ/FIREWORKS_AI_API_KEY
-
-  - model_name: kilo-plan
-    litellm_params:
-      model: fireworks_ai/glm-5p3-flash
-      api_key: os.environ/FIREWORKS_AI_API_KEY
-  - model_name: kilo-plan-fallback-1
-    litellm_params:
-      model: openrouter/z-ai/glm-5.3-flash
-      api_key: os.environ/OPENROUTER_API_KEY
-  - model_name: kilo-plan-fallback-2
-    litellm_params:
-      model: deepinfra/zai-org/GLM-5.3
-      api_key: os.environ/DEEPINFRA_API_KEY
-
-  - model_name: kilo-orchestrator
-    litellm_params:
-      model: openrouter/openai/gpt-5.6-luna
-      api_key: os.environ/OPENROUTER_API_KEY
-  - model_name: kilo-orchestrator-fallback-1
-    litellm_params:
-      model: fireworks_ai/kimi-k3
-      api_key: os.environ/FIREWORKS_AI_API_KEY
-  - model_name: kilo-orchestrator-fallback-2
-    litellm_params:
-      model: deepinfra/moonshotai/Kimi-K3
       api_key: os.environ/DEEPINFRA_API_KEY
 
   # ── Direct Flagship Access
@@ -276,10 +223,24 @@ model_list:
       api_key: os.environ/GEMINI_API_KEY
 
 router_settings:
-  routing_strategy: "cost-based-routing"
+  # simple-shuffle is required for `order:` on the autorouter deployments to be
+  # honoured (lowest order = tried first; the next order only receives traffic
+  # when every lower-order deployment is in cooldown/failed). The previous
+  # "cost-based-routing" ignored order and always picked the cheapest per-token
+  # price - Fireworks (0.22/0.66 per M) is the priciest of the three, so it was
+  # effectively never used. All other model groups have a single deployment and
+  # rely on router_settings.fallbacks below, so this strategy change is a no-op
+  # for them.
+  routing_strategy: "simple-shuffle"
   num_retries: 2
   timeout: 180
   fallbacks:
+    # AutoRouter: order-based routing across 3 providers; if every deployment
+    # fails, step down to sektor9-code (and its cross-provider fallbacks) so the
+    # session never hard-errors on a single dead provider.
+    - { "sektor9-autorouter": ["sektor9-code", "sektor9-code-fallback-1", "sektor9-code-fallback-2"] }
+    - { "autorouter": ["sektor9-code", "sektor9-code-fallback-1", "sektor9-code-fallback-2"] }
+    - { "auto-router": ["sektor9-code", "sektor9-code-fallback-1", "sektor9-code-fallback-2"] }
     - { "sektor9-code": ["sektor9-code-fallback-1", "sektor9-code-fallback-2"] }
     - { "sektor9-ask": ["sektor9-ask-fallback-1", "sektor9-ask-fallback-2"] }
     - { "sektor9-debug": ["sektor9-debug-fallback-1", "sektor9-debug-fallback-2"] }
@@ -292,12 +253,7 @@ router_settings:
     - { "sektor9-sql": ["sektor9-sql-fallback-1"] }
     - { "sektor9-devops": ["sektor9-devops-fallback-1"] }
     - { "sektor9-creative": ["sektor9-creative-fallback-1"] }
-    # Kilo fallbacks
-    - { "kilo-code": ["kilo-code-fallback-1", "kilo-code-fallback-2"] }
-    - { "kilo-ask": ["kilo-ask-fallback-1", "kilo-ask-fallback-2"] }
-    - { "kilo-debug": ["kilo-debug-fallback-1", "kilo-debug-fallback-2"] }
-    - { "kilo-plan": ["kilo-plan-fallback-1", "kilo-plan-fallback-2"] }
-    - { "kilo-orchestrator": ["kilo-orchestrator-fallback-1", "kilo-orchestrator-fallback-2"] }
+
 
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY

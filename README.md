@@ -149,40 +149,35 @@ in Kilo Code whenever you specifically want one of them. Two open items:
 
 ## Model routing
 
-Picked for price/capability using each provider's current listed rates
-(OpenRouter, DeepInfra, Fireworks AI only, per your preference — Anthropic/Gemini
-were checked but not used). Every mode's fallback chain deliberately spans a
-*different* provider per hop, so no single provider is a single point of
-failure for any mode.
+Every mode's chain deliberately spans a *different* provider per hop, so no
+single provider is a single point of failure. **OpenRouter is primary** (best
+price/capability mix), DeepInfra is fallback-1, Fireworks is fallback-2. When a
+provider is down (e.g. OpenRouter budget-cap or Fireworks suspension), LiteLLM
+fails over to the next working provider automatically — verified live.
 
-| Mode | Primary | Fallback 1 | Fallback 2 |
+| Mode | Primary (OpenRouter) | Fallback 1 (DeepInfra) | Fallback 2 (Fireworks) |
 |---|---|---|---|
-| **Code** | DeepInfra `DeepSeek-V4-Flash-0731` ($0.06/$0.18 per 1M) | OpenRouter `deepseek-v4.1-flash` | Fireworks `deepseek-v4-flash-0731` |
-| **Ask** | DeepInfra `Llama-3.3-70B-Turbo` ($0.10/$0.32) | OpenRouter `llama-3.3-70b-instruct` | Fireworks `llama-v3p3-70b-instruct` |
-| **Debug** | DeepInfra `DeepSeek-V4.1-Flash` ($0.20/$0.60) | OpenRouter `deepseek-v4.1-flash` | Fireworks `deepseek-v4p1-flash` |
-| **Plan** | Fireworks `GLM-5.3-Flash` ($0.15/$0.50) | OpenRouter `glm-5.3-flash` | DeepInfra `GLM-5.3` (full, closest DeepInfra has to the Flash variant) |
-| **Ask fallback-2** | *(see Ask row for primary/fallback-1)* | — | Fireworks `GLM-5.3-Flash`, not Llama — Fireworks' serverless catalog has no Llama model at all right now (verified live) |
-| **Orchestrator** | OpenRouter `gpt-5.6-luna` (OpenAI, no cheaper equivalent — kept as-is since it's low-volume and mistakes here cascade to every sub-agent) | Fireworks `kimi-k3` | DeepInfra `Kimi-K3` |
+| **Code** | `deepseek-v4.1-flash` | `DeepSeek-V4-Flash-0731` | `deepseek-v4p1-flash` |
+| **Ask** | `llama-3.3-70b-instruct` | `Llama-3.3-70B-Turbo` | `glm-5p3-flash` |
+| **Debug** | `deepseek-v4.1-flash` | `DeepSeek-V4.1-Flash` | `deepseek-v4p1-flash` |
+| **Plan** | `glm-5.3-flash` | `glm-5p3-flash` | `GLM-5.3` |
+| **Orchestrator** | `gpt-5.6-luna` | `kimi-k3` (Fireworks) | `Kimi-K3` (DeepInfra) |
+| **Review/Refactor/Test/SQL** | `deepseek-v4.1-flash` | `DeepSeek-V4.1/V4-Flash` | (provider varies) |
+| **Docs/DevOps** | `llama-3.3-70b-instruct` | `glm-5p3-flash` / `DeepSeek-V4.1-Flash` | — |
+| **Creative** | `gpt-5.6-luna` | `Llama-3.3-70B-Turbo` | — |
 
 Why these specifically:
-- **Code** is your highest-volume mode, so it got the cheapest model that's
-  still a real coding model (DeepSeek Flash), not the cheapest model overall.
-- **Ask** and **Debug** were left mostly as you had them — I checked and
-  they were already good price/capability picks; Debug in particular keeps
-  the pricier V4.1 checkpoint over the base Flash since debugging benefits
-  more from reasoning quality.
-- **Plan** moved from OpenRouter to Fireworks direct once I had confirmed
-  Fireworks pricing for the same model ($0.15/$0.50) — same model, one less
-  hop.
-- **Orchestrator** stayed on the strongest model rather than the cheapest,
-  since it runs rarely (once per task, to delegate) but a bad decision there
-  affects everything downstream.
+- **Code/Debug/Review/Refactor/Test/SQL** — DeepSeek V4.x is the best
+  price/capability coding model; primary is the OpenRouter route, falling to
+  the same family on DeepInfra/Fireworks.
+- **Ask/Docs/DevOps** — Llama-3.3-70B is the best general-knowledge
+  price/capability pick; GLM covers the Fireworks hop.
+- **Plan** — GLM-5.3 is the best planning/capability pick.
+- **Orchestrator** stays on the strongest model (GPT) since a bad delegate
+  decision cascades to every sub-agent; Kimi covers the fallbacks.
+- **Creative** uses GPT primary + Llama fallback for prose/copywriting quality.
 
-Confidence note: pricing and model slugs for OpenRouter/DeepInfra were
-verified live against `http://127.0.0.1:4000` during setup (10 of the 15
-configured models were test-called successfully). The 5 Fireworks-backed
-entries are configured correctly per Fireworks' docs but untested — verify
-once you've added your key (see below).
+**Kilo aliases were removed** — the gateway is Sektor9-only now.
 
 ## Verifying it works
 

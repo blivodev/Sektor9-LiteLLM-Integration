@@ -22,7 +22,7 @@ python editors/openwork/install.py
 Finds your OpenWork workspaces from its server state (Windows; pass
 `--workspace DIR` for others) and writes the LiteLLM provider, the gateway
 MCP server, the [power pack](../README.md#the-power-pack-closer-to-claude-desktop--code)
-and a default model (`litellm/kilo-code`) into each workspace's
+and a default model (`litellm/sektor9-autorouter`) into each workspace's
 `opencode.jsonc` (backed up first). It deliberately does **not** rebind
 agents — OpenWork ships its own `openwork` agent — and does not touch the
 global OpenCode config (run `editors/opencode/install.py` for that).

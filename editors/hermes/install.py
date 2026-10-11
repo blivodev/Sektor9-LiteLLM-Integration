@@ -118,7 +118,7 @@ def main():
     settings = [
         ("providers.litellm.api", "http://127.0.0.1:4000/v1"),
         ("providers.litellm.key_env", "LITELLM_API_KEY"),
-        ("model.default", "kilo-code"),
+        ("model.default", "sektor9-autorouter"),
         ("model.provider", "custom:litellm"),
         ("mcp_servers.litellm-gateway.url", "http://127.0.0.1:4000/mcp"),
         ("mcp_servers.litellm-gateway.headers.Authorization", f"Bearer {master_key}"),
@@ -147,8 +147,8 @@ def main():
         "\nVerify any time with:\n"
         "  hermes doctor\n"
         "  hermes mcp test litellm-gateway\n"
-        "  hermes -z \"say pong\" --provider litellm -m kilo-code\n"
-        "Switch models live with `hermes model` (kilo-ask, kilo-debug, kilo-plan, "
+        "  hermes -z \"say pong\" --provider litellm -m sektor9-autorouter\n"
+        "Switch models live with `hermes model` (sektor9-code, kilo-ask, kilo-debug, kilo-plan, "
         "kilo-orchestrator, claude, gemini are all available the same way)."
     )
 

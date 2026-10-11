@@ -43,10 +43,10 @@ import common  # noqa: E402
 # OpenCode agent -> LiteLLM model, mirroring the Kilo Code mapping in
 # docs/ARCHITECTURE.md (cheap tier for exploration/general, planner for plan).
 AGENT_BINDINGS = {
-    "build": "kilo-code",
-    "plan": "kilo-plan",
-    "general": "kilo-ask",
-    "explore": "kilo-ask",
+    "build": "sektor9-autorouter",
+    "plan": "sektor9-plan",
+    "general": "sektor9-autorouter",
+    "explore": "sektor9-autorouter",
 }
 
 
@@ -159,8 +159,8 @@ def merge_config(cfg: dict, models: list[str], rebind: bool, agents: bool, power
             notes.append(f"{label}: {old}  ->  {value}")
         container[key] = value
 
-    set_val(cfg, "model", "litellm/kilo-code", "model")
-    set_val(cfg, "small_model", "litellm/kilo-ask", "small_model")
+    set_val(cfg, "model", "litellm/sektor9-autorouter", "model")
+    set_val(cfg, "small_model", "litellm/sektor9-autorouter", "small_model")
     if agents:
         agent_cfg = cfg.setdefault("agent", {})
         for agent, model in AGENT_BINDINGS.items():
@@ -249,7 +249,7 @@ def main():
 
     if not args.skip_env:
         common.set_persistent_env_var("LITELLM_API_KEY", master_key)
-    print("\nVerify: opencode mcp list   |   opencode run -m litellm/kilo-code \"say pong\"")
+    print("\nVerify: opencode mcp list   |   opencode run -m litellm/sektor9-autorouter \"say pong\"")
     print("(Open a NEW terminal first if this is the first time LITELLM_API_KEY was set.)")
 
 

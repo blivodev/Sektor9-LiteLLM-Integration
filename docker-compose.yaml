@@ -44,4 +44,6 @@ services:
 
 volumes:
   litellm_postgres_data:
+    name: litellm_litellm_postgres_data
   litellm_mcp_memory:
+    name: litellm_litellm_mcp_memory

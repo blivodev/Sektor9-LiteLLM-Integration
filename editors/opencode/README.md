@@ -22,8 +22,8 @@ What it adds/changes:
 | **Provider `litellm`** | OpenAI-compatible, `http://127.0.0.1:4000/v1`. Models are discovered live from the proxy, so a mode you add on the dashboard's *Custom Routing* page shows up after a re-run. |
 | **MCP `litellm-gateway`** | The whole 16-server gateway, as a remote MCP server. |
 | **Power pack** (MCP, local) | `desktop-commander` + `windows-mcp` — see [the power pack](../README.md#the-power-pack-closer-to-claude-desktop--code). Skip with `--no-power`. |
-| **Default `model` / `small_model`** | `litellm/kilo-code` / `litellm/kilo-ask` |
-| **Agents** | `build`→`kilo-code`, `plan`→`kilo-plan`, `general` and `explore`→`kilo-ask` |
+| **Default `model` / `small_model`** | `litellm/sektor9-autorouter` / `litellm/sektor9-autorouter` |
+| **Agents** | `build`, `general`, `explore`→`sektor9-autorouter`, `plan`→`sektor9-plan` |
 
 Pass `--no-rebind` to only *add* things and leave your own model/agent
 choices alone. Nothing secret is written to the file: the provider and the
@@ -46,8 +46,8 @@ chains.
 
 ```bash
 opencode mcp list                                   # 3x "connected"
-opencode run "say pong"                             # > build · kilo-code
-opencode run --agent plan "say pong"                # > plan · kilo-plan
+opencode run "say pong"                             # > build · sektor9-autorouter
+opencode run --agent plan "say pong"                # > plan · sektor9-plan
 ```
 
 Verified this session against the installer's real output: all three MCP

@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 GATEWAY = "http://127.0.0.1:4000"  # 127.0.0.1 not localhost: see docs/STATUS.md (IPv6 dead end)
 
 # Used only if the proxy isn't reachable while installing.
-DEFAULT_MODELS = ["kilo-code", "kilo-ask", "kilo-debug", "kilo-plan", "kilo-orchestrator", "claude", "gemini"]
+DEFAULT_MODELS = ["sektor9-autorouter", "sektor9-code", "sektor9-plan", "sektor9-debug", "sektor9-ask", "sektor9-orchestrator", "kilo-code", "kilo-ask", "kilo-debug", "kilo-plan", "kilo-orchestrator", "claude", "gemini"]
 
 
 def load_env() -> dict:

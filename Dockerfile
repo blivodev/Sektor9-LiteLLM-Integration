@@ -10,6 +10,15 @@ RUN apk add --no-cache npm py3-pip ffmpeg git go
 # no separate pip-install step needed) using the system pip explicitly.
 RUN /usr/bin/pip3 install --break-system-packages --no-cache-dir uv
 
+# Sektor9 402-failover patch (sitecustomize). Python auto-imports a file named
+# `sitecustomize.py` from site-packages at interpreter startup, BEFORE litellm
+# loads. It patches LiteLLM's OpenAI-compatible exception mapper so an upstream
+# HTTP 402 "Insufficient Balance" (out of credits) maps to RateLimitError
+# instead of a generic APIError — which is what makes the router retry across
+# deployments / cooldown the broken one and fail over to a healthy provider
+# (see docker/sitecustomize.py for the full rationale).
+COPY docker/sitecustomize.py /app/.venv/lib/python3.13/site-packages/sitecustomize.py
+
 # mcp-language-server (LSP bridge covering Go/Python/JS/C# in one server)
 # is Go-only with no published binary release — compile it at build time so
 # the running container doesn't need Go/network access to use it.

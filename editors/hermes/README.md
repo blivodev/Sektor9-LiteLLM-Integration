@@ -16,14 +16,14 @@ just configured on paper.
   via OpenRouter/DeepInfra. These are **not** used by default here, and
   deliberately so — see the caveat right below.
 
-## Why the default model is `kilo-code`, not a Hermes model
+## Why the default model is `sektor9-autorouter`, not a Hermes model
 
 Checked before writing anything (live against the real provider APIs,
 not assumed):
 
 | Model | Provider | $ in/out per 1M | Tool calling |
 |---|---|---|---|
-| `kilo-code` (DeepSeek-V4-Flash) | DeepInfra | $0.18 / $0.18 | ✅ Yes |
+| `sektor9-autorouter` (DeepSeek-V4.x Flash) | Fireworks -> DeepInfra -> OpenRouter | $0.18 / $0.18 | ✅ Yes |
 | Hermes-4-405B | OpenRouter | $1.00 / $3.00 | ❌ **No** (confirmed via OpenRouter's live `/api/v1/models`, `supported_parameters` excludes `tools`) |
 | Hermes-3-70B | OpenRouter | $0.70 / $0.70 | ❌ No |
 | Hermes-3-405B | OpenRouter | $1.00 / $1.00 | ❌ No |
@@ -32,9 +32,9 @@ not assumed):
 
 A coding agent that can't reliably call tools can't edit files, run
 commands, or use the MCP gateway — that's most of what this whole
-project exists to do. None of the Hermes options above beat `kilo-code`
+project exists to do. None of the Hermes options above beat `sektor9-autorouter`
 on both price and tool support at once on the 3 providers this project
-uses. `install.py` sets Hermes Agent's `model.default` to `kilo-code`
+uses. `install.py` sets Hermes Agent's `model.default` to `sektor9-autorouter`
 for exactly this reason.
 
 If you want to try a Hermes model anyway (for plain chat/exploration,
@@ -57,7 +57,7 @@ this approach avoids) to set:
 ```
 providers.litellm.api        = http://127.0.0.1:4000/v1
 providers.litellm.key_env    = LITELLM_API_KEY
-model.default                = kilo-code
+model.default                = sektor9-autorouter
 model.provider                = custom:litellm
 mcp_servers.litellm-gateway.url                    = http://127.0.0.1:4000/mcp
 mcp_servers.litellm-gateway.headers.Authorization  = Bearer <your master key>
@@ -78,7 +78,7 @@ Not just "config looks right" — a real round trip through the whole
 chain:
 
 ```
-$ hermes -z "reply with exactly the word pong" --provider litellm -m kilo-code
+$ hermes -z "reply with exactly the word pong" --provider litellm -m sektor9-autorouter
 pong
 ```
 
@@ -92,7 +92,7 @@ $ hermes mcp test litellm-gateway
 ```
 
 Both confirmed working end to end: Hermes Agent -> LiteLLM ->
-`kilo-code` (DeepInfra) for chat, and Hermes Agent -> LiteLLM's MCP
+`sektor9-autorouter` (Fireworks) for chat, and Hermes Agent -> LiteLLM's MCP
 gateway -> all 16 configured MCP servers for tools. This is the most
 thoroughly live-tested of the newer editors added this session (more
 than Tabby or Copilot Chat, which stopped at config verification).

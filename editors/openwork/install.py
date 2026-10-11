@@ -13,7 +13,7 @@ gateway + power-pack MCP servers and a default model into every OpenWork
 workspace it can find. Verified live: with the global OpenCode config hidden
 and OpenWork's real runtime config layered in, a workspace file written by
 this script alone gave OpenCode the provider, all three MCP servers and a
-working `openwork` agent chat on kilo-code.
+working `openwork` agent chat on the LiteLLM default model.
 
 It does NOT rebind agents (OpenWork ships its own `openwork` agent) and does
 NOT touch ~/.config/opencode -- run editors/opencode/install.py for that.

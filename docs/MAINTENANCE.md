@@ -44,18 +44,27 @@ curl http://127.0.0.1:4000/v1/chat/completions \
 ## Adding a new model / fallback leg
 
 Same shape as any existing entry — add to `model_list`, and if it's a
-fallback, add or extend its mode's line in `router_settings.fallbacks`:
+fallback, add **both directions** to `router_settings.fallbacks`: the primary
+must point at the new leg, AND the new leg must point back at its primary.
 
 ```yaml
-- model_name: kilo-code-fallback-3
+- model_name: sektor9-code-fallback-3
   litellm_params:
     model: openrouter/some/model
     api_key: os.environ/OPENROUTER_API_KEY
 ```
 ```yaml
 fallbacks:
-  - { "kilo-code": ["kilo-code-fallback-1", "kilo-code-fallback-2", "kilo-code-fallback-3"] }
+  - { "sektor9-code": ["sektor9-code-fallback-1", "sektor9-code-fallback-2", "sektor9-code-fallback-3"] }
+  - { "sektor9-code-fallback-3": ["sektor9-code"] }
 ```
+
+**Never leave a fallback group without a fallback of its own.** A single-
+provider `*-fallback-N` group is a hard dead end: the moment that one provider
+runs out of credits the request dies even though other providers are healthy.
+The back-pointer (`fallback-3 -> primary`) is what lets the router return to the
+multi-provider primary, where cooldown skips the dead provider. This is the
+exact class of bug fixed in Session 7 — see `docs/STATUS.md`.
 
 ## Adding a new MCP server (runs entirely in the container)
 

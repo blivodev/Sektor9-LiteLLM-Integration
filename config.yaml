@@ -388,22 +388,51 @@ router_settings:
   num_retries: 2
   timeout: 180
   fallbacks:
-    # AutoRouter: if every same-model deployment fails, step down to sektor9-code.
+    # Every chain here is LOOP-SAFE and has NO DEAD END. Two rules:
+    #   (a) a primary group falls to its cheaper/alternate *-fallback-N groups;
+    #   (b) each *-fallback-N group falls BACK to its own primary group, whose
+    #       multi-provider deployment list still holds a healthy leg.
+    # Without rule (b), a request pinned to a single-provider fallback group
+    # (e.g. sektor9-review-fallback-1 = Fireworks only) died hard the moment
+    # that one provider ran out of credits -- the "Fireworks ran out and
+    # nothing fell back" incident. With (b) the router keeps re-trying the
+    # primary group, and deployment cooldown skips the dead provider, so it
+    # lands on a live one instead of erroring.
+    #
+    # AutoRouter aliases first: if every same-model deployment fails, step
+    # down to sektor9-code (the highest-volume, best-covered group).
     - { "sektor9-autorouter": ["sektor9-code", "sektor9-code-fallback-1", "sektor9-code-fallback-2"] }
     - { "autorouter": ["sektor9-code", "sektor9-code-fallback-1", "sektor9-code-fallback-2"] }
     - { "auto-router": ["sektor9-code", "sektor9-code-fallback-1", "sektor9-code-fallback-2"] }
     - { "sektor9-code": ["sektor9-code-fallback-1", "sektor9-code-fallback-2"] }
+    - { "sektor9-code-fallback-1": ["sektor9-code"] }
+    - { "sektor9-code-fallback-2": ["sektor9-code"] }
     - { "sektor9-ask": ["sektor9-ask-fallback-1", "sektor9-ask-fallback-2"] }
+    - { "sektor9-ask-fallback-1": ["sektor9-ask"] }
+    - { "sektor9-ask-fallback-2": ["sektor9-ask"] }
     - { "sektor9-debug": ["sektor9-debug-fallback-1", "sektor9-debug-fallback-2"] }
+    - { "sektor9-debug-fallback-1": ["sektor9-debug"] }
+    - { "sektor9-debug-fallback-2": ["sektor9-debug"] }
     - { "sektor9-plan": ["sektor9-plan-fallback-1", "sektor9-plan-fallback-2"] }
+    - { "sektor9-plan-fallback-1": ["sektor9-plan"] }
+    - { "sektor9-plan-fallback-2": ["sektor9-plan"] }
     - { "sektor9-orchestrator": ["sektor9-orchestrator-fallback-1", "sektor9-orchestrator-fallback-2"] }
+    - { "sektor9-orchestrator-fallback-1": ["sektor9-orchestrator"] }
+    - { "sektor9-orchestrator-fallback-2": ["sektor9-orchestrator"] }
     - { "sektor9-review": ["sektor9-review-fallback-1"] }
+    - { "sektor9-review-fallback-1": ["sektor9-review"] }
     - { "sektor9-refactor": ["sektor9-refactor-fallback-1"] }
+    - { "sektor9-refactor-fallback-1": ["sektor9-refactor"] }
     - { "sektor9-test": ["sektor9-test-fallback-1"] }
+    - { "sektor9-test-fallback-1": ["sektor9-test"] }
     - { "sektor9-docs": ["sektor9-docs-fallback-1"] }
+    - { "sektor9-docs-fallback-1": ["sektor9-docs"] }
     - { "sektor9-sql": ["sektor9-sql-fallback-1"] }
+    - { "sektor9-sql-fallback-1": ["sektor9-sql"] }
     - { "sektor9-devops": ["sektor9-devops-fallback-1"] }
+    - { "sektor9-devops-fallback-1": ["sektor9-devops"] }
     - { "sektor9-creative": ["sektor9-creative-fallback-1"] }
+    - { "sektor9-creative-fallback-1": ["sektor9-creative"] }
 
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY

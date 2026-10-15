@@ -1,6 +1,76 @@
 # Status, bugs found & fixed, potential upgrades
 
-## Session 6 additions (this round)
+## Session 7 additions (this round)
+
+Asked: "fix my sektor9 litellm integration - its not falling back when i run
+out of credits from fireworks ai". Reproduced live against the running stack,
+found **two independent defects**, fixed both, verified live.
+
+### The real cause: Fireworks returns HTTP 412, not 402
+
+The existing credit-failover patch (`docker/sitecustomize.py`) only converted
+**HTTP 402 "Insufficient Balance"** to a retriable `RateLimitError`. Fireworks
+does **not** use 402. Its API returns **HTTP 412 Precondition Failed** when the
+account is over its monthly spend limit / suspended, with a body like:
+
+```
+{"error":{"message":"Account YOUR_USERNAME is suspended, possibly due to reaching
+ the monthly spending limit or failure to pay past invoices. Please go to
+ https://fireworks.ai/account/billing for more information.",
+ "code":"PRECONDITION_FAILED","type":"error"}}
+```
+
+LiteLLM falls 412 through to a **non-retriable** exception (`litellm._should_retry`
+only retries 408/409/429/5xx — verified by reading the live source). So the
+router neither retried across deployments nor cooled the dead one down.
+Confirmed live: a request pinned to `sektor9-orchestrator-fallback-1`
+(Fireworks-only) died hard with `litellm.APIError: Fireworks_aiException -
+{...412 PRECONDITION_FAILED...}` and "No fallback model group found".
+
+**Fix (defect A):** `docker/sitecustomize.py` now maps credit-exhaustion to
+`RateLimitError` on **any** status when the body carries a billing signal, and
+specifically treats **412 as credit-exhaustion when the body names an
+account/billing condition** (`suspended`, `spending limit`, `past invoice`,
+`billing`, `payment`, ...). A *genuine* 412 precondition failure (e.g. an ETag
+mismatch) still surfaces as itself — no false positives. Teeth-verified: the
+old 402-only detector returns `api_error (retriable=False)` for the real
+Fireworks body; the new one returns `RateLimitError (retriable=True)`.
+
+### The second defect: every `*-fallback-*` group was a dead end
+
+`router_settings.fallbacks` only ever went **downward** (primary → fallback-1 →
+fallback-2) and the fallback groups had **no fallback of their own**. So a
+request pinned to a single-provider fallback leg (e.g.
+`sektor9-review-fallback-1` = Fireworks only) had nowhere to go the moment that
+provider was dead — even a correctly-mapped retriable error could not escape it.
+
+**Fix (defect B):** every `*-fallback-N` group now falls **back to its own
+primary group**, whose multi-provider deployment list still holds a healthy
+leg. Combined with deployment cooldown skipping the dead provider, the chain
+always terminates on a live provider instead of erroring. Verified: **0
+dead-end groups** remain (excluding the intentional direct `claude`/`gemini`
+escape hatches), 32 fallback rules total.
+
+### Verified live (after rebuild + `docker compose up -d --force-recreate litellm`)
+
+Fireworks is genuinely suspended on this account, so it is a real-world test:
+
+- `sektor9-orchestrator-fallback-1` — was hard `412`, now **200** → fails over
+  to `deepinfra/moonshotai/Kimi-K3`.
+- All 7 previously-dead Fireworks legs (`-review-`, `-test-`, `-docs-`,
+  `-refactor-`, `-debug-`, `-ask-`, `-orchestrator-fallback-1`) now return
+  **200** and land on DeepInfra.
+- All 15 modes/aliases (`sektor9-code` … `sektor9-creative`, `sektor9-autorouter`,
+  `autorouter`, `auto-router`) return **200**.
+- `/health` shows the Fireworks deployments cooled down (skipped, not retried
+  every request).
+
+**To fully restore Fireworks** (it is a *billing* state, not a code fault): top
+up / un-suspend the account at
+[fireworks.ai/account/billing](https://fireworks.ai/account/billing). Until
+then the router routes around it automatically.
+
+## Session 6 additions (previous round)
 
 Asked: "how do I point Goose or OpenCode at my setup?", then "also set up
 OpenWork", then "install anything that brings some of them close to Claude

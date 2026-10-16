@@ -66,6 +66,39 @@ The back-pointer (`fallback-3 -> primary`) is what lets the router return to the
 multi-provider primary, where cooldown skips the dead provider. This is the
 exact class of bug fixed in Session 7 — see `docs/STATUS.md`.
 
+## Failover relies on cooldown — keep it long, and keep the detector broad
+
+Two settings in `router_settings` and one patch make provider failover work
+together; changing any one of them in isolation will make failover look
+"inconsistent" again (Session 8):
+
+```yaml
+router_settings:
+  cooldown_time: 300     # NOT LiteLLM's 5s default — a dead provider must stay
+                         # out of rotation long enough for a healthy one to serve
+  allowed_fails: 1       # one account-level failure is enough to cool a deployment
+```
+
+- **`docker/sitecustomize.py`** maps account-level provider errors
+  (out-of-credits **402**, budget/spending-limit **403** — OpenRouter's
+  "Budget limit exceeded" — suspended-account **412**, and rate/capacity
+  refusals) to `RateLimitError`, which is what the router will retry and cool
+  down. LiteLLM's own mappers leave 402/403/412 as a non-retriable `APIError`,
+  so without the patch the dead provider is never cooled.
+- **`cooldown_time`**: LiteLLM's default is **5 seconds**. With cost-based
+  routing the three `sektor9-autorouter` legs are priced identically, so the
+  router deterministically re-picks the cheapest — if that one isn't held in
+  cooldown it gets hammered on every request. 300s is the working value.
+- **`allowed_fails`**: default is 3; 1 is correct here because a single
+  account-level failure is already conclusive.
+- **When adding a provider-specific error shape**, add its wording to
+  `_CREDIT_SIGNALS` / `_ACCOUNT_SIGNALS` in `docker/sitecustomize.py` (e.g.
+  another vendor's "insufficient funds" phrasing). Keep genuine
+  authorization/precondition errors OUT of the list so they still surface.
+- The patch is baked into the image via the Dockerfile `COPY`; after editing it,
+  rebuild (`docker compose up -d --build litellm`) or `docker cp` it into a
+  running container for a quick test.
+
 ## Adding a new MCP server (runs entirely in the container)
 
 Add an entry under `mcp_servers` in `config.yaml`:

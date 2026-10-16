@@ -387,6 +387,17 @@ router_settings:
   routing_strategy: "cost-based-routing"
   num_retries: 2
   timeout: 180
+  # ── Cooldown / failover tuning (why these are not defaults) ──────────────
+  # LiteLLM's defaults are cooldown_time=5s and allowed_fails=3. Five seconds
+  # means a credit-dead provider rejoins rotation almost immediately and gets
+  # hammered again -> failover looks "inconsistent". 300s keeps a provider that
+  # just said "out of credits / over budget" out of rotation long enough for
+  # the next-cheapest healthy provider to serve, without a restart.
+  cooldown_time: 300
+  # One failure (with the account-level patch mapping it to RateLimitError) is
+  # enough to cool a deployment down -- don't require 3 hits before skipping a
+  # provider that is provably out of credits.
+  allowed_fails: 1
   fallbacks:
     # Every chain here is LOOP-SAFE and has NO DEAD END. Two rules:
     #   (a) a primary group falls to its cheaper/alternate *-fallback-N groups;

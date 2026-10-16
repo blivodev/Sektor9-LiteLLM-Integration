@@ -10,13 +10,16 @@ RUN apk add --no-cache npm py3-pip ffmpeg git go
 # no separate pip-install step needed) using the system pip explicitly.
 RUN /usr/bin/pip3 install --break-system-packages --no-cache-dir uv
 
-# Sektor9 402-failover patch (sitecustomize). Python auto-imports a file named
-# `sitecustomize.py` from site-packages at interpreter startup, BEFORE litellm
-# loads. It patches LiteLLM's OpenAI-compatible exception mapper so an upstream
-# HTTP 402 "Insufficient Balance" (out of credits) maps to RateLimitError
-# instead of a generic APIError — which is what makes the router retry across
-# deployments / cooldown the broken one and fail over to a healthy provider
-# (see docker/sitecustomize.py for the full rationale).
+# Sektor9 provider-failure failover patch (sitecustomize). Python auto-imports
+# a file named `sitecustomize.py` from site-packages at interpreter startup,
+# BEFORE litellm loads. It wraps LiteLLM's provider exception mappers so an
+# upstream account-level failure — out of credits (402), over a budget/spending
+# limit (OpenRouter 403 "Budget limit exceeded"), a suspended account
+# (Fireworks 412 PRECONDITION_FAILED), or a rate/capacity refusal — maps to
+# RateLimitError instead of a generic, non-retriable APIError. RateLimitError
+# is what makes the router retry across deployments, cooldown the dead one, and
+# fail over to the next-cheapest healthy provider.
+# (see docker/sitecustomize.py for the full rationale and the signal list).
 COPY docker/sitecustomize.py /app/.venv/lib/python3.13/site-packages/sitecustomize.py
 
 # mcp-language-server (LSP bridge covering Go/Python/JS/C# in one server)

@@ -1,6 +1,89 @@
 # Status, bugs found & fixed, potential upgrades
 
-## Session 7 additions (this round)
+## Session 8 additions (this round)
+
+Asked: "it's not falling back or 'rotating' between providers and/or models
+for sektor9-autorouter consistently." Reproduced live, found **three** further
+defects beyond Session 7, fixed all three, verified live.
+
+### Provider states at the time (ground truth, probed directly)
+
+| Provider | Direct API result |
+|---|---|
+| DeepInfra | **402** "You need positive balance to do inference" |
+| OpenRouter | **403** `{"error":{"message":"Budget limit exceeded (monthly limit). $40.06 of $40.00 used; resets 2026-11-01T00:00:00Z","code":403,"metadata":{"limit_source":"openrouter_guardrail_budget",...}}}` |
+| Fireworks | **200** (working) |
+
+So only Fireworks was healthy — exactly the "not falling back consistently"
+scenario.
+
+### Defect C — OpenRouter's 403 budget error was never caught
+
+The Session-7 patch recognised 402 (any) and 412 (with an account signal), and
+any status carrying a *billing* signal. OpenRouter's dead-account error is
+**403** with the words **"Budget limit exceeded (monthly limit)"** — neither
+"budget" nor "monthly limit" was in the signal list, so it fell through to a
+non-retriable `APIError(403)`: **not retried, not cooled down**, so the dead
+provider kept rejoining rotation. That is the literal cause of "not rotating
+consistently".
+
+**Fix (defect C):** the detector is generalised. It now treats as
+failover-worthy:
+- **402** unconditionally;
+- **403 / 412** when the body carries any account-scoped word
+  (`budget`, `limit`, `quota`, `credit`, `balance`, `billing`, `payment`,
+  `invoice`, `suspend`, `spending`, `unpaid`, `rate`, `capacity`, `overloaded`);
+- **any status** carrying an explicit credit / billing / quota / budget /
+  rate-limit / capacity signal.
+A genuine 403 "no access to this model" or a malformed-request 412 still
+surfaces as itself (verified — see the test matrix below).
+
+### Defect D — cooldown was 5 seconds
+
+`DEFAULT_COOLDOWN_TIME_SECONDS = 5` and `litellm.allowed_fails = 3` (read from
+the live 1.102.0 source). A provider that just said "out of credits" was back
+in rotation **five seconds** later and got hammered again — the second half of
+"inconsistent". `router_settings` now sets:
+
+```yaml
+cooldown_time: 300     # keep a dead provider out for 5 min, not 5 s
+allowed_fails: 1       # one account-level failure is enough to cool it down
+```
+
+### Defect E — cost-based routing is deterministic, so rotation relies on cooldown
+
+`lowest_cost.py` sorts deployments by `input_cost + output_cost` and picks
+`potential_deployments[0]` — with no shuffle among equal-cost deployments. The
+three `sektor9-autorouter` legs are all priced identically, so without cooldown
+the router keeps re-picking the same (dead) cheapest leg. Rotation among
+equal-cost healthy providers is therefore *driven by cooldown*, which is why
+defects C and D had to be fixed together.
+
+### Verified live (test matrix, deployed patch)
+
+| Case | Expected | Result |
+|---|---|---|
+| OpenRouter 403 "Budget limit exceeded" | failover | **RateLimitError(429)** ✓ |
+| DeepInfra 402 "positive balance" | failover | **RateLimitError(429)** ✓ |
+| Fireworks 412 suspended-account | failover | **RateLimitError(429)** ✓ |
+| Fireworks 412 genuine precondition | surface | surfaced (not swallowed) ✓ |
+| 403 "no access to this model" | surface | surfaced (not swallowed) ✓ |
+| 429 rate limit | failover | **RateLimitError(429)** ✓ |
+| 500 upstream error | surface | surfaced ✓ |
+
+End-to-end against the running proxy with DeepInfra(402) + OpenRouter(403)
+dead and Fireworks alive:
+
+- **8/8** requests to `sektor9-autorouter` returned **200**; response headers
+  confirmed `x-litellm-model-name: fireworks_ai/deepseek-v4p1-flash`.
+- **Cold path** (proxy restarted to clear in-memory cooldowns, then a *single*
+  fresh request): still **200**, still Fireworks — i.e. it fails over
+  mid-request, not only via pre-existing cooldown.
+- `/health` after one request shows both dead legs cooled at
+  `cooldown_time: 300` with `exception_status: 429` (DeepInfra 402→429,
+  OpenRouter 403→429).
+
+## Session 7 additions (previous round)
 
 Asked: "fix my sektor9 litellm integration - its not falling back when i run
 out of credits from fireworks ai". Reproduced live against the running stack,
